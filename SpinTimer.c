@@ -1,5 +1,9 @@
 #include <limits.h>
+#include <stdbool.h>
 #include "SpinTimer.h"
+
+const bool SpinTimer_IS_NON_RECURRING = true;
+const bool SpinTimer_IS_RECURRING     = false;
 
 bool m_isRecurring;
 bool m_isRunning;

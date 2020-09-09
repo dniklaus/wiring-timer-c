@@ -1,0 +1,6 @@
+[submodule "test/test-cmockery/cmockery"]
+	path = test/test-cmockery/cmockery
+	url = git@github.com:google/cmockery.git
+[submodule "test/test-cmocka/cmocka"]
+	path = test/test-cmocka/cmocka
+	url = https://git.cryptomilk.org/projects/cmocka.git

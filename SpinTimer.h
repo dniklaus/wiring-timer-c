@@ -5,8 +5,8 @@
 #include "SpinTimerAdapter.h"
 #include "UptimeInfo.h"
 
-const bool Timer_IS_NON_RECURRING = false;
-const bool Timer_IS_RECURRING = true;
+const bool SpinTimer_IS_NON_RECURRING;
+const bool SpinTimer_IS_RECURRING;
 
 void SpinTimer_create(bool isRecurring);
 void SpinTimer_destroy();
