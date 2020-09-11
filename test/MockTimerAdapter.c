@@ -7,7 +7,7 @@ static unsigned int calls;
 void MockTimerAdapter_timeExpired()
 {
     calls = calls + 1;
-    printf(" MockTimerAdapter_timeExpired()");
+    printf("NOTE: MockTimerAdapter_timeExpired()!\n");
 }
 
 void MockTimerAdapter_resetNumberOfCalls()
