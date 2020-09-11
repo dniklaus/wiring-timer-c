@@ -4,13 +4,12 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <setjmp.h>
-#include <cmockery.h>
+#include <cmocka.h>
 #include <SpinTimer.h>
 #include <SpinTimerAdapter.h>
 #include <UptimeInfo.h>
 #include <StubTestUptimeInfo.h>
 #include <MockTimerAdapter.h>
-
 void timer_create_allDefaults_test(void **state)
 {
   SpinTimer_create(false);
