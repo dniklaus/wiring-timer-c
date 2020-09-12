@@ -9,7 +9,12 @@
 #include <SpinTimerAdapter.h>
 #include <UptimeInfo.h>
 #include <StubTestUptimeInfo.h>
-#include <MockTimerAdapter.h>
+
+void CMockaTimerAdapter_timeExpired()
+{
+  function_called();
+}
+
 void timer_create_allDefaults_test(void **state)
 {
   SpinTimer_create(false);
@@ -278,10 +283,10 @@ void timer_testTickAndCallback_test(void **state)
 
   SpinTimer_create(false);
   SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
-  SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  SpinTimer_assignTimeExpiredCallback(&CMockaTimerAdapter_timeExpired);
 
   StubTestUptimeInfo_setTMillis(startMillis);
-  MockTimerAdapter_resetNumberOfCalls();
+  expect_function_calls(CMockaTimerAdapter_timeExpired, 1);
 
   SpinTimer_start(delayMillis);
   assert_int_equal(SpinTimer_isRunning(), true);
@@ -292,14 +297,12 @@ void timer_testTickAndCallback_test(void **state)
     assert_int_equal(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
-    // printf("tMillis: 0x%lx (%lu)\n", StubTestUptimeInfo_tMillis(), StubTestUptimeInfo_tMillis());
   }
 
   assert_int_equal(SpinTimer_isExpired(), true);
   assert_int_equal(SpinTimer_isExpired(), false);
   assert_int_equal(SpinTimer_isRunning(), false);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 1);
   assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
@@ -311,10 +314,10 @@ void timer_testTickAndCallback_zeroDelay_test(void **state)
 
   SpinTimer_create(false);
   SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
-  SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  SpinTimer_assignTimeExpiredCallback(&CMockaTimerAdapter_timeExpired);
 
   StubTestUptimeInfo_setTMillis(startMillis);
-  MockTimerAdapter_resetNumberOfCalls();
+  expect_function_calls(CMockaTimerAdapter_timeExpired, 1);
 
   SpinTimer_start(delayMillis);
   assert_int_equal(SpinTimer_isRunning(), true);
@@ -324,14 +327,12 @@ void timer_testTickAndCallback_zeroDelay_test(void **state)
     assert_int_equal(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
-    // printf("tMillis: 0x%lx (%lu)\n", StubTestUptimeInfo_tMillis(), StubTestUptimeInfo_tMillis());
   }
 
   assert_int_equal(SpinTimer_isExpired(), true);
   assert_int_equal(SpinTimer_isExpired(), false);
   assert_int_equal(SpinTimer_isRunning(), false);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 1);
   assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
@@ -343,10 +344,10 @@ void timer_testRecurringTimer_test(void **state)
 
   SpinTimer_create(true);
   SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
-  SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  SpinTimer_assignTimeExpiredCallback(&CMockaTimerAdapter_timeExpired);
 
   StubTestUptimeInfo_setTMillis(startMillis);
-  MockTimerAdapter_resetNumberOfCalls();
+  expect_function_calls(CMockaTimerAdapter_timeExpired, 2);
 
   SpinTimer_start(delayMillis);
   assert_int_equal(SpinTimer_isRunning(), true);
@@ -357,14 +358,12 @@ void timer_testRecurringTimer_test(void **state)
     assert_int_equal(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
-    // printf("tMillis: 0x%lx (%lu)\n", StubTestUptimeInfo_tMillis(), StubTestUptimeInfo_tMillis());
   }
 
   assert_int_equal(SpinTimer_isExpired(), true);
   assert_int_equal(SpinTimer_isExpired(), false);
   assert_int_equal(SpinTimer_isRunning(), true);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 2);
   assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
