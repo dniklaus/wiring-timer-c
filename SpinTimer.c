@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include "SpinTimer.h"
 
-const bool SpinTimer_IS_NON_RECURRING = true;
-const bool SpinTimer_IS_RECURRING     = false;
+extern const bool SpinTimer_IS_NON_RECURRING = false;
+extern const bool SpinTimer_IS_RECURRING     = true;
 
 bool m_isRecurring;
 bool m_isRunning;
