@@ -332,5 +332,6 @@ TEST(SpinTimer, timer_testRecurringTimer_test)
   EXPECT_EQ(SpinTimer_isExpired(), false);
   EXPECT_EQ(SpinTimer_isRunning(), true);
 
+  EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 2);
   EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
