@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+//#include <gmock/gmock.h>
 #include <stdbool.h>
 #include <limits.h>
+//#include <GMockTimerAdapter.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -247,12 +249,17 @@ TEST(SpinTimer, timer_testTickAndCallback_test)
   const unsigned long int startMillis = ULONG_MAX-delayMillis;
   const unsigned long int expEndMillis = startMillis + delayMillis;
 
+  // GMockTimerAdapter GMockTimerAdapterObj;
+  // EXPECT_CALL(GMockTimerAdapterObj, timeExpired()).Times(1);
+
   SpinTimer_create(SpinTimer_IS_NON_RECURRING);
   SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
   SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  //SpinTimer_assignTimeExpiredCallback(&gMockTimerAdapter_timeExpired);
 
   StubTestUptimeInfo_setTMillis(startMillis);
   MockTimerAdapter_resetNumberOfCalls();
+
 
   SpinTimer_start(delayMillis);
   EXPECT_EQ(SpinTimer_isRunning(), true);
