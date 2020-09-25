@@ -11,14 +11,10 @@
 #include "stm32l4xx_hal.h"
 #include "UptimeInfo.h"
 
-class STM32UptimeInfoAdapter: public UptimeInfoAdapter
+unsigned long STM32UptimeInfoAdapter_tMillis()
 {
-public:
-  inline unsigned long tMillis()
-  {
-    unsigned long ms = HAL_GetTick();
-    return ms;
-  }
-};
+  unsigned long ms = HAL_GetTick();
+  return ms;
+}
 
 #endif /* STM32UPTIMEINFOADAPTER_H_ */

@@ -1,5 +1,4 @@
-#define WIRINGTIMER_SUPPRESS_WARNINGS 1
-#include <Timer.h>
+#include <SpinTimer.h>
 
 void toggleLed(int ledPin)
 {
@@ -9,25 +8,24 @@ void toggleLed(int ledPin)
 
 const unsigned int  BLINK_TIME_MILLIS = 200;
 
-class BlinkTimerAdapter : public TimerAdapter
+void timeExpired()
 {
-public:
-  void timeExpired()
-  {
-    toggleLed(LED_BUILTIN);
-  }
-};
+  toggleLed(LED_BUILTIN);
+}
 
 // The setup function is called once at startup of the sketch
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
-  new Timer(new BlinkTimerAdapter(), Timer::IS_RECURRING, BLINK_TIME_MILLIS);
+
+  SpinTimer_create(SpinTimer_IS_RECURRING);
+  SpinTimer_assignTimeExpiredCallback(&timeExpired);
+  SpinTimer_start(BLINK_TIME_MILLIS);
 }
 
 // The loop function is called in an endless loop
 void loop()
 {
-  scheduleTimers();
+  SpinTimer_tick();
 }
   

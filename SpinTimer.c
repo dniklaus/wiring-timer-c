@@ -38,6 +38,9 @@ void SpinTimer_destroy()
 {
   m_funcTimeExpired = 0;
   m_funcTMillis = 0;
+  m_isRecurring = SpinTimer_IS_NON_RECURRING;
+  m_isRunning = false;
+  m_isExpiredFlag = false;
 }
 
 void SpinTimer_start(unsigned long timeMillis)
