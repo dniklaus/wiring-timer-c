@@ -2,6 +2,7 @@
 #define HwTimerHandler_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 /**
  * @brief <<Interface>> HwTimerHandler
@@ -18,29 +19,18 @@ typedef enum HwTimerMode_t
 
 struct HwTimerHandler_t
 {
-  void (*setMode)(HwTimerHandler self, HwTimerMode mode);
-  void (*setIntervallMicros)(HwTimerHandler self);
-  void (*start)(HwTimerHandler self);
-  void (*stop)(HwTimerHandler self);
+  void (*setMode)(HwTimerMode mode);
+  void (*setIntervallMicros)(uint32_t timeMicros);
+  void (*start)();
+  void (*stop)();
 };
 
 HwTimerHandler HwTimerHandler_create(
-  void (*setMode)(HwTimerHandler self, HwTimerMode mode),
-  void (*setIntervallMicros)(HwTimerHandler self),
-  void (*start)(HwTimerHandler self),
-  void (*stop)(HwTimerHandler self))
-{
-  HwTimerHandler instance = (HwTimerHandler) calloc(1, sizeof(HwTimerHandler_t));
+  void (*setMode)(HwTimerMode mode),
+  void (*setIntervallMicros)(uint32_t timeMicros),
+  void (*start)(),
+  void (*stop)());
 
-  instance->setMode             = setMode;
-  instance->setIntervallMicros  = setIntervallMicros;
-  instance->start               = start;
-  instance->stop                = stop;
-}
-
-void HwTimerHandler_destroy(HwTimerHandler self)
-{
-  free(self);
-}
+void HwTimerHandler_destroy(HwTimerHandler self);
 
 #endif
