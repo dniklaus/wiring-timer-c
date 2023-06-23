@@ -31,8 +31,10 @@ void internalTick(SpinTimer self);
  */
 void startInterval(SpinTimer self);
 
-void SpinTimer_create(SpinTimer self, bool isRecurring)
+SpinTimer SpinTimer_create(bool isRecurring)
 {
+  SpinTimer self = (SpinTimer)calloc(1, sizeof(SpinTimer_t));
+
   self->m_funcTimeExpired = 0;
   self->m_funcTMillis = 0;
   self->m_isRecurring = isRecurring;
@@ -43,6 +45,8 @@ void SpinTimer_create(SpinTimer self, bool isRecurring)
   self->m_currentTimeMillis = 0;
   self->m_triggerTimeMillis = 0;
   self->m_triggerTimeMillisUpperLimit = 0;
+
+  return self;
 }
 
 void SpinTimer_destroy(SpinTimer self)

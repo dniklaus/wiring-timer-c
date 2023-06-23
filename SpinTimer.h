@@ -12,7 +12,7 @@ extern const bool SpinTimer_IS_RECURRING;
 typedef struct SpinTimer_t* SpinTimer;
 typedef struct HwTimerHandler_t* HwTimerHandler;
 
-void SpinTimer_create(SpinTimer self, bool isRecurring);
+SpinTimer SpinTimer_create(bool isRecurring);
 void SpinTimer_destroy(SpinTimer self);
 
 void SpinTimer_start(SpinTimer self, unsigned long timeMillis);
