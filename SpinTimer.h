@@ -4,19 +4,24 @@
 #include <stdbool.h>
 #include "SpinTimerAdapter.h"
 #include "UptimeInfo.h"
+#include "HwTimerHandler.h"
 
 extern const bool SpinTimer_IS_NON_RECURRING;
 extern const bool SpinTimer_IS_RECURRING;
 
-void SpinTimer_create(bool isRecurring);
-void SpinTimer_destroy();
+typedef struct SpinTimer_t* SpinTimer;
+typedef struct HwTimerHandler_t* HwTimerHandler;
 
-void SpinTimer_start(unsigned long timeMillis);
-void SpinTimer_cancel();
-bool SpinTimer_isRunning();
-bool SpinTimer_isExpired();
-void SpinTimer_tick();
-void SpinTimer_assignTimeExpiredCallback(void (*timeExpired)());
-void SpinTimer_assignUptimeInfoCallout(unsigned long (*tMillis)());
+void SpinTimer_create(SpinTimer self, bool isRecurring);
+void SpinTimer_destroy(SpinTimer self);
+
+void SpinTimer_start(SpinTimer self, unsigned long timeMillis);
+void SpinTimer_cancel(SpinTimer self);
+bool SpinTimer_isRunning(SpinTimer self);
+bool SpinTimer_isExpired(SpinTimer self);
+void SpinTimer_tick(SpinTimer self);
+void SpinTimer_assignTimeExpiredCallback(SpinTimer self, void (*timeExpired)());
+void SpinTimer_assignUptimeInfoCallout(SpinTimer self, unsigned long (*tMillis)());
+void SpinTimer_assignHwTimerHandler(SpinTimer self, HwTimerHandler hwTimerHandler);
 
 #endif
