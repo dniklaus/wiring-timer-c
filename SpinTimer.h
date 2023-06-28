@@ -11,6 +11,7 @@ extern const bool SpinTimer_IS_NON_RECURRING;
 extern const bool SpinTimer_IS_RECURRING;
 
 typedef struct SpinTimer_t* SpinTimer;
+typedef struct HwTimerHandler_t* HwTimerHandler;
 
 SpinTimer SpinTimer_create(bool isRecurring);
 void SpinTimer_destroy(SpinTimer self);
@@ -20,6 +21,7 @@ void SpinTimer_cancel(SpinTimer self);
 bool SpinTimer_isRunning(SpinTimer self);
 bool SpinTimer_isExpired(SpinTimer self);
 void SpinTimer_tick(SpinTimer self);
+void SpinTimer_notifyExpired(SpinTimer self);
 void SpinTimer_assignTimeExpiredCallback(SpinTimer self, void (*timeExpired)());
 void SpinTimer_assignUptimeInfoCallout(SpinTimer self, uint32_t (*tMicros)());
 void SpinTimer_assignHwTimerHandler(SpinTimer self, HwTimerHandler hwTimerHandler);

@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include "SpinTimer.h"
 
+// TODO: get this dependency out of here :-) !!
+#include "project.h"
+
 const bool SpinTimer_IS_NON_RECURRING = false;
 const bool SpinTimer_IS_RECURRING     = true;
 
@@ -82,6 +85,7 @@ void SpinTimer_start(SpinTimer self, uint32_t timeMicros)
   }
   else
   {
+    // this runs only as long as no HwTimerHandler is assigned
     if (0 != self->m_funcTMicros)
     {
       self->m_currentTimeMicros = self->m_funcTMicros();
@@ -111,16 +115,56 @@ bool SpinTimer_isRunning(SpinTimer self)
 
 bool SpinTimer_isExpired(SpinTimer self)
 {
-  internalTick(self); // TODO : be aware of not running this when HwTimerHandler is assigned !!
-  bool isExpired = self->m_isExpiredFlag;
-  self->m_isExpiredFlag = false;
-  return isExpired;
+    // TODO: get this dependency out of here :-) !!
+    CyGlobalIntDisable;     
+
+    if (0 == self->m_hwTimerHandler)
+    {
+        // runs only as long as no HwTimerHandler is assigned
+        internalTick(self);
+    }
+    bool isExpired = self->m_isExpiredFlag;
+    self->m_isExpiredFlag = false;
+    
+    // TODO: get this dependency out of here :-) !!
+    CyGlobalIntEnable;
+
+    return isExpired;
 }
 
-// TODO : be aware of not running this when HwTimerHandler is assigned !!
 void SpinTimer_tick(SpinTimer self)
 {
-  internalTick(self);
+    if (0 == self->m_hwTimerHandler)
+    {
+        // runs only as long as no HwTimerHandler is assigned
+        internalTick(self);
+    }
+}
+
+void SpinTimer_notifyExpired(SpinTimer self)
+{
+    if (0 != self)
+    {
+        // interval is over
+        if (self->m_isRecurring)
+        {
+            if (0 == self->m_hwTimerHandler)
+            {
+                // start next interval (only as long as no HwTimerHandler is assigned)
+                startInterval(self);
+            }
+        }
+        else
+        {
+          self->m_isRunning = false;
+        }
+
+        self->m_isExpiredFlag = true;
+        if (0 != self->m_funcTimeExpired)
+        {
+          self->m_funcTimeExpired();
+        }
+    }
 }
 
 void SpinTimer_assignTimeExpiredCallback(SpinTimer self, void (*timeExpired)())
@@ -128,27 +172,26 @@ void SpinTimer_assignTimeExpiredCallback(SpinTimer self, void (*timeExpired)())
   self->m_funcTimeExpired = timeExpired;
 }
 
-void SpinTimer_assignUptimeInfoCallout(SpinTimer self, uint32_t (*tMillis)())
+void SpinTimer_assignUptimeInfoCallout(SpinTimer self, uint32_t (*tMicros)())
 {
-  if (0 != tMillis)
+  if (0 != tMicros)
   {
-    // mutual exclusion of HwTimerHandler operation as soon as uptime lookup callout is assigned
+    // mutual exclusion: HwTimerHandler operation suppressed as soon as uptime lookup callout is assigned
     self->m_hwTimerHandler = 0;
   }
-  self->m_funcTMicros = tMillis;
+  self->m_funcTMicros = tMicros;
 }
 
 void SpinTimer_assignHwTimerHandler(SpinTimer self, HwTimerHandler hwTimerHandler)
 {
   if (0 != hwTimerHandler)
   {
-    // mutual exclusion of uptime lookup mode as soon as HwTimerHandler is assigned
+    // mutual exclusion: uptime lookup suppressed as soon as HwTimerHandler is assigned
     self->m_funcTMicros = 0;
   }
   self->m_hwTimerHandler = hwTimerHandler;
 }
 
-// TODO : be aware of not running this when HwTimerHandler is assigned !!
 void startInterval(SpinTimer self)
 {
   uint32_t deltaTime = ULONG_MAX - self->m_currentTimeMicros;
@@ -167,7 +210,6 @@ void startInterval(SpinTimer self)
 }
 
 
-// TODO : be aware of not running this when HwTimerHandler is assigned !!
 void internalTick(SpinTimer self)
 {
   bool intervalIsOver = false;
@@ -190,22 +232,7 @@ void internalTick(SpinTimer self)
       
       if (intervalIsOver)
       {
-        // interval is over
-        if (self->m_isRecurring)
-        {
-          // start next interval
-          startInterval(self);
-        }
-        else
-        {
-          self->m_isRunning = false;
-        }
-
-        self->m_isExpiredFlag = true;
-        if (0 != self->m_funcTimeExpired)
-        {
-          self->m_funcTimeExpired();
-        }
+        SpinTimer_notifyExpired(self);
       }
     }
   }
