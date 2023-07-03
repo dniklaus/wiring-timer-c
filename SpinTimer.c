@@ -8,7 +8,7 @@
 const bool SpinTimer_IS_NON_RECURRING = false;
 const bool SpinTimer_IS_RECURRING     = true;
 
-struct SpinTimer_t
+struct SpinTimer
 {
   bool m_isRunning;
   bool m_isRecurring;
