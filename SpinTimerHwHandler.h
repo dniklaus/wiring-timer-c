@@ -6,26 +6,26 @@
 #include "SpinTimer.h"
 
 /**
- * @brief <<Interface>> HwTimerHandler
+ * @brief <<Interface>> SpinTimerHwHandler
  * 
- * @details Interface to a HW Timer Handler, used by a Spin Timer.
+ * @details Interface to a HW Handler used by a SpinTimer.
  */
-typedef struct HwTimerHandler HwTimerHandler;
+typedef struct SpinTimerHwHandler SpinTimerHwHandler;
 typedef struct SpinTimer SpinTimer;
 
-struct HwTimerHandler
+struct SpinTimerHwHandler
 {
     void (*setup)(SpinTimer* spinTimer);
     void (*start)(uint32_t timeMicros);
     void (*stop)();
 };
 
-HwTimerHandler* HwTimerHandler_create(
+SpinTimerHwHandler* SpinTimerHwHandler_create(
     SpinTimer* spinTimer,
     void (*setup)(SpinTimer* spinTimer),
     void (*start)(uint32_t timeMicros),
     void (*stop)());
 
-void HwTimerHandler_destroy(HwTimerHandler* self);
+void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self);
 
 #endif

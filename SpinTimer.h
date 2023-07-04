@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "SpinTimerAdapter.h"
 #include "UptimeInfo.h"
-#include "HwTimerHandler.h"
+#include "SpinTimerHwHandler.h"
 
 typedef enum SpinTimerMode
 {
@@ -13,7 +13,7 @@ typedef enum SpinTimerMode
   SpinTimerMode_continuous = 1
 } SpinTimerMode;
     
-typedef struct HwTimerHandler HwTimerHandler;
+typedef struct SpinTimerHwHandler SpinTimerHwHandler;
 typedef struct SpinTimer SpinTimer;
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode);
@@ -28,6 +28,6 @@ void SpinTimer_tick(SpinTimer* self);
 void SpinTimer_notifyExpired(SpinTimer* self);
 void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)());
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMillis)());
-void SpinTimer_assignHwTimerHandler(SpinTimer* self, HwTimerHandler* hwTimerHandler);
+void SpinTimer_assignHwTimerHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
 
 #endif

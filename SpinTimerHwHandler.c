@@ -1,15 +1,15 @@
-#include "HwTimerHandler.h"
+#include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
 struct SpinTimer;
 
-HwTimerHandler* HwTimerHandler_create(
+SpinTimerHwHandler* SpinTimerHwHandler_create(
     SpinTimer* spinTimer,
     void (*setup)(SpinTimer* spinTimer),
     void (*start)(uint32_t timeMicros),
     void (*stop)())
 {
-    HwTimerHandler* instance = malloc(sizeof(HwTimerHandler));
+    SpinTimerHwHandler* instance = malloc(sizeof(SpinTimerHwHandler));
 
     instance->setup                 = setup;
     instance->start                 = start;
@@ -22,7 +22,7 @@ HwTimerHandler* HwTimerHandler_create(
     return instance;
 }
 
-void HwTimerHandler_destroy(HwTimerHandler* self)
+void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self)
 {
   free(self);
 }

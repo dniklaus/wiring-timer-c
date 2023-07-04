@@ -1,6 +1,6 @@
 #include <limits.h>
 #include <stdlib.h>
-#include "HwTimerHandler.h"
+#include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
 // TODO: get this dependency out of here :-) !!
@@ -18,7 +18,7 @@ struct SpinTimer
     uint32_t m_triggerTimeMicrosUpperLimit;
     void (*m_funcTimeExpired)();
     uint32_t (*m_funcTMicros)();
-    HwTimerHandler* m_hwTimerHandler;
+    SpinTimerHwHandler* m_hwTimerHandler;
 };
 
 /**
@@ -77,7 +77,7 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
     }
     else
     {
-        // this runs only as long as no HwTimerHandler is assigned
+        // this runs only as long as no SpinTimerHwHandler is assigned
         if (0 != self->m_funcTMicros)
         {
             self->m_currentTimeMicros = self->m_funcTMicros();
@@ -112,7 +112,7 @@ bool SpinTimer_isExpired(SpinTimer* self)
 
     if (0 == self->m_hwTimerHandler)
     {
-        // runs only as long as no HwTimerHandler is assigned
+        // runs only as long as no SpinTimerHwHandler is assigned
         internalTick(self);
     }
     bool isExpired = self->m_isExpiredFlag;
@@ -128,7 +128,7 @@ void SpinTimer_tick(SpinTimer* self)
 {
     if (0 == self->m_hwTimerHandler)
     {
-        // runs only as long as no HwTimerHandler is assigned
+        // runs only as long as no SpinTimerHwHandler is assigned
         internalTick(self);
     }
 }
@@ -142,7 +142,7 @@ void SpinTimer_notifyExpired(SpinTimer* self)
         {
             if (0 == self->m_hwTimerHandler)
             {
-                // start next interval (only as long as no HwTimerHandler is assigned)
+                // start next interval (only as long as no SpinTimerHwHandler is assigned)
                 startInterval(self);
             }
         }
@@ -168,17 +168,17 @@ void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMicros)())
 {
     if (0 != tMicros)
     {
-        // mutual exclusion: HwTimerHandler operation suppressed as soon as uptime lookup callout is assigned
+        // mutual exclusion: SpinTimerHwHandler operation suppressed as soon as uptime lookup callout is assigned
         self->m_hwTimerHandler = 0;
     }
     self->m_funcTMicros = tMicros;
 }
 
-void SpinTimer_assignHwTimerHandler(SpinTimer* self, HwTimerHandler* hwTimerHandler)
+void SpinTimer_assignHwTimerHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler)
 {
     if (0 != hwTimerHandler)
     {
-        // mutual exclusion: uptime lookup suppressed as soon as HwTimerHandler is assigned
+        // mutual exclusion: uptime lookup suppressed as soon as SpinTimerHwHandler is assigned
         self->m_funcTMicros = 0;
     }
     self->m_hwTimerHandler = hwTimerHandler;
