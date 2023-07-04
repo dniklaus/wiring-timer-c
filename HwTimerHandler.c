@@ -1,19 +1,17 @@
 #include "HwTimerHandler.h"
-#include "externals/lib/spintimer/SpinTimer.h"
+#include "SpinTimer.h"
 
-HwTimerHandler HwTimerHandler_create(
-    SpinTimer spinTimer,
-    void (*setup)(SpinTimer spinTimer),
-    void (*setMode)(HwTimerMode mode),
-    void (*setIntervallMicros)(uint32_t timeMicros),
-    void (*start)(),
+struct SpinTimer;
+
+HwTimerHandler* HwTimerHandler_create(
+    SpinTimer* spinTimer,
+    void (*setup)(SpinTimer* spinTimer),
+    void (*start)(uint32_t timeMicros),
     void (*stop)())
 {
-    HwTimerHandler instance = (HwTimerHandler) calloc(1, sizeof(struct HwTimerHandler_t));
+    HwTimerHandler* instance = malloc(sizeof(HwTimerHandler));
 
     instance->setup                 = setup;
-    instance->setMode               = setMode;
-    instance->setIntervallMicros    = setIntervallMicros;
     instance->start                 = start;
     instance->stop                  = stop;
 
@@ -24,7 +22,7 @@ HwTimerHandler HwTimerHandler_create(
     return instance;
 }
 
-void HwTimerHandler_destroy(HwTimerHandler self)
+void HwTimerHandler_destroy(HwTimerHandler* self)
 {
   free(self);
 }

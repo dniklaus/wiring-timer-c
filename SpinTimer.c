@@ -1,17 +1,15 @@
 #include <limits.h>
 #include <stdlib.h>
+#include "HwTimerHandler.h"
 #include "SpinTimer.h"
 
 // TODO: get this dependency out of here :-) !!
 #include "project.h"
 
-const bool SpinTimer_IS_NON_RECURRING = false;
-const bool SpinTimer_IS_RECURRING     = true;
-
 struct SpinTimer
-  {
+{
+    SpinTimerMode mode;
     bool m_isRunning;
-    bool m_isRecurring;
     bool m_isExpiredFlag;
     bool m_willOverflow;
     uint32_t m_delayMicros;
@@ -20,7 +18,7 @@ struct SpinTimer
     uint32_t m_triggerTimeMicrosUpperLimit;
     void (*m_funcTimeExpired)();
     uint32_t (*m_funcTMicros)();
-    HwTimerHandler m_hwTimerHandler;
+    HwTimerHandler* m_hwTimerHandler;
 };
 
 /**
@@ -33,11 +31,11 @@ void internalTick(SpinTimer* self);
  */
 void startInterval(SpinTimer* self);
 
-SpinTimer* SpinTimer_create(bool isRecurring)
+SpinTimer* SpinTimer_create(SpinTimerMode mode)
 {
-    SpinTimer* self = (SpinTimer)calloc(1, sizeof(SpinTimer));
+    SpinTimer* self = malloc(sizeof(SpinTimer));
 
-    self->m_isRecurring = isRecurring;
+    self->mode = mode;
     self->m_isRunning = false;
     self->m_isExpiredFlag = false;
     self->m_willOverflow = false;
@@ -56,11 +54,13 @@ void SpinTimer_destroy(SpinTimer* self)
 {
     self->m_funcTimeExpired = 0;
     self->m_funcTMicros = 0;
-    self->m_isRecurring = SpinTimer_IS_NON_RECURRING;
-    self->m_isRunning = false;
-    self->m_isExpiredFlag = false;
-
+    self->m_hwTimerHandler = 0;
     free(self);
+}
+
+SpinTimerMode SpinTimer_getMode(SpinTimer* self)
+{
+    return self->mode;
 }
 
 void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
@@ -70,17 +70,9 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
 
     if (0 != self->m_hwTimerHandler)
     {
-        if (0 != self->m_hwTimerHandler->setMode)
-        {
-            self->m_hwTimerHandler->setMode(self->m_isRecurring ? HwTimerMode_continuous : HwTimerMode_oneShot);
-        }
-        if (0 != self->m_hwTimerHandler->setIntervallMicros)
-        {    
-            self->m_hwTimerHandler->setIntervallMicros(self->m_delayMicros);
-        }
         if (0 != self->m_hwTimerHandler->start)
         {    
-            self->m_hwTimerHandler->start();
+            self->m_hwTimerHandler->start(self->m_delayMicros);
         }
     }
     else
@@ -146,7 +138,7 @@ void SpinTimer_notifyExpired(SpinTimer* self)
     if (0 != self)
     {
         // interval is over
-        if (self->m_isRecurring)
+        if (self->mode == SpinTimerMode_continuous)
         {
             if (0 == self->m_hwTimerHandler)
             {
@@ -182,7 +174,7 @@ void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMicros)())
     self->m_funcTMicros = tMicros;
 }
 
-void SpinTimer_assignHwTimerHandler(SpinTimer* self, HwTimerHandler hwTimerHandler)
+void SpinTimer_assignHwTimerHandler(SpinTimer* self, HwTimerHandler* hwTimerHandler)
 {
     if (0 != hwTimerHandler)
     {

@@ -7,22 +7,27 @@
 #include "UptimeInfo.h"
 #include "HwTimerHandler.h"
 
-extern const bool SpinTimer_IS_NON_RECURRING;
-extern const bool SpinTimer_IS_RECURRING;
-
-typedef struct SpinTimer SpinTimer;
+typedef enum SpinTimerMode
+{
+  SpinTimerMode_oneShot = 0,
+  SpinTimerMode_continuous = 1
+} SpinTimerMode;
+    
 typedef struct HwTimerHandler HwTimerHandler;
+typedef struct SpinTimer SpinTimer;
 
-SpinTimer* SpinTimer_create(bool isRecurring);
+SpinTimer* SpinTimer_create(SpinTimerMode mode);
 void SpinTimer_destroy(SpinTimer* self);
 
+SpinTimerMode SpinTimer_getMode(SpinTimer* self);
 void SpinTimer_start(SpinTimer* self, uint32_t timeMicros);
 void SpinTimer_cancel(SpinTimer* self);
 bool SpinTimer_isRunning(SpinTimer* self);
 bool SpinTimer_isExpired(SpinTimer* self);
 void SpinTimer_tick(SpinTimer* self);
+void SpinTimer_notifyExpired(SpinTimer* self);
 void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)());
-void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, unsigned long (*tMillis)());
+void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMillis)());
 void SpinTimer_assignHwTimerHandler(SpinTimer* self, HwTimerHandler* hwTimerHandler);
 
 #endif

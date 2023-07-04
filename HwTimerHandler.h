@@ -10,33 +10,22 @@
  * 
  * @details Interface to a HW Timer Handler, used by a Spin Timer.
  */
-typedef struct HwTimerHandler_t* HwTimerHandler;
-    
-typedef struct SpinTimer_t* SpinTimer;
+typedef struct HwTimerHandler HwTimerHandler;
+typedef struct SpinTimer SpinTimer;
 
-typedef enum HwTimerMode_t
+struct HwTimerHandler
 {
-  HwTimerMode_oneShot = 0,
-  HwTimerMode_continuous = 1
-} HwTimerMode;
-
-struct HwTimerHandler_t
-{
-    void (*setup)(SpinTimer spinTimer);
-    void (*setMode)(HwTimerMode mode);
-    void (*setIntervallMicros)(uint32_t timeMicros);
-    void (*start)();
+    void (*setup)(SpinTimer* spinTimer);
+    void (*start)(uint32_t timeMicros);
     void (*stop)();
 };
 
-HwTimerHandler HwTimerHandler_create(
-    struct SpinTimer_t* spinTimer,
-    void (*setup)(SpinTimer spinTimer),
-    void (*setMode)(HwTimerMode mode),
-    void (*setIntervallMicros)(uint32_t timeMicros),
-    void (*start)(),
+HwTimerHandler* HwTimerHandler_create(
+    SpinTimer* spinTimer,
+    void (*setup)(SpinTimer* spinTimer),
+    void (*start)(uint32_t timeMicros),
     void (*stop)());
 
-void HwTimerHandler_destroy(HwTimerHandler self);
+void HwTimerHandler_destroy(HwTimerHandler* self);
 
 #endif
