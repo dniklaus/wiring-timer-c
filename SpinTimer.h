@@ -28,6 +28,6 @@ void SpinTimer_tick(SpinTimer* self);
 void SpinTimer_notifyExpired(SpinTimer* self);
 void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)());
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMillis)());
-void SpinTimer_assignHwTimerHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
+void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
 
 #endif
