@@ -3,9 +3,6 @@
 #include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
-// TODO: get this dependency out of here :-) !!
-#include "project.h"
-
 struct SpinTimer
 {
     SpinTimerMode mode;
@@ -107,8 +104,10 @@ bool SpinTimer_isRunning(SpinTimer* self)
 
 bool SpinTimer_isExpired(SpinTimer* self)
 {
-    // TODO: get this dependency out of here :-) !!
-    CyGlobalIntDisable;     
+    if ((0 != self->hwHandler) && (0 != self->hwHandler->intControl))
+    {
+        self->hwHandler->intControl(SpinTimerHwHandlerIntAction_disable);
+    }
 
     if (0 == self->hwHandler)
     {
@@ -118,8 +117,10 @@ bool SpinTimer_isExpired(SpinTimer* self)
     bool isExpired = self->isExpiredFlag;
     self->isExpiredFlag = false;
     
-    // TODO: get this dependency out of here :-) !!
-    CyGlobalIntEnable;
+    if ((0 != self->hwHandler) && (0 != self->hwHandler->intControl))
+    {
+        self->hwHandler->intControl(SpinTimerHwHandlerIntAction_enable);
+    }
 
     return isExpired;
 }

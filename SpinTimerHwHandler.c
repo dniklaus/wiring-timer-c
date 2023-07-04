@@ -7,13 +7,15 @@ SpinTimerHwHandler* SpinTimerHwHandler_create(
     SpinTimer* spinTimer,
     void (*setup)(SpinTimer* spinTimer),
     void (*start)(uint32_t timeMicros),
-    void (*stop)())
+    void (*stop)(),
+    void (*intControl)(SpinTimerHwHandlerIntAction intAction))
 {
     SpinTimerHwHandler* instance = malloc(sizeof(SpinTimerHwHandler));
 
-    instance->setup                 = setup;
-    instance->start                 = start;
-    instance->stop                  = stop;
+    instance->setup      = setup;
+    instance->start      = start;
+    instance->stop       = stop;
+    instance->intControl = intControl;
 
     if (0 != setup)
     {
@@ -24,5 +26,9 @@ SpinTimerHwHandler* SpinTimerHwHandler_create(
 
 void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self)
 {
-  free(self);
+    if (0 != self)
+    {
+        self->intControl(false);
+    }
+    free(self);
 }
