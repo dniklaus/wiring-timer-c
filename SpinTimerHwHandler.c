@@ -1,34 +1,35 @@
 #include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
-struct SpinTimer;
-
-SpinTimerHwHandler* SpinTimerHwHandler_create(
-    SpinTimer* spinTimer,
-    void (*setup)(SpinTimer* spinTimer),
-    void (*start)(uint32_t timeMicros),
-    void (*stop)(),
-    void (*intControl)(SpinTimerHwHandlerIntAction intAction))
+typedef struct SpinTimerHwHandlerAttributes
 {
-    SpinTimerHwHandler* instance = malloc(sizeof(SpinTimerHwHandler));
+    SpinTimer* spinTimer;
+} SpinTimerHwHandlerAttributes;
 
-    instance->setup      = setup;
-    instance->start      = start;
-    instance->stop       = stop;
-    instance->intControl = intControl;
+SpinTimerHwHandler* SpinTimerHwHandler_create(SpinTimer* spinTimer)
+{
+    SpinTimerHwHandler* base = malloc(sizeof(SpinTimerHwHandler));
+    SpinTimerHwHandlerAttributes* _attr = malloc(sizeof(SpinTimerHwHandlerAttributes));
 
-    if (0 != setup)
-    {
-        instance->setup(spinTimer);
-    }
-    return instance;
+    base->attr = _attr;
+
+    base->attr->spinTimer = spinTimer;
+
+    base->destroy     = &SpinTimerHwHandler_destroy;
+    base->start       = 0;
+    base->stop        = 0;
+    base->intControl  = 0;
+    base->spinTimer   = &SpinTimerHwHandler_spinTimer;
+
+    return base;
 }
 
 void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self)
 {
-    if (0 != self)
-    {
-        self->intControl(false);
-    }
     free(self);
+}
+
+SpinTimer* SpinTimerHwHandler_spinTimer(SpinTimerHwHandler* self)
+{
+    return self->attr->spinTimer;
 }

@@ -21,12 +21,12 @@ struct SpinTimer
 /**
  * @brief Evaluate time expired condition (private local function)
  */
-void internalTick(SpinTimer* self);
+void SpinTimer_internalTick(SpinTimer* self);
 
 /**
  * @brief Start the (new) interval (private local function)
  */
-void startInterval(SpinTimer* self);
+void SpinTimer_startInterval(SpinTimer* self);
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode)
 {
@@ -67,10 +67,7 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
 
     if (0 != self->hwHandler)
     {
-        if (0 != self->hwHandler->start)
-        {    
-            self->hwHandler->start(self->delayMicros);
-        }
+        self->hwHandler->start(self->delayMicros);
     }
     else
     {
@@ -79,7 +76,7 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
         {
             self->currentTimeMicros = self->funcTMicros();
         }
-        startInterval(self);
+        SpinTimer_startInterval(self);
     }
 }
 
@@ -90,10 +87,7 @@ void SpinTimer_cancel(SpinTimer* self)
 
     if (0 != self->hwHandler)
     {
-        if (0 != self->hwHandler->stop)
-        {
-            self->hwHandler->stop();
-        }
+        self->hwHandler->stop();
     }
 }
 
@@ -104,7 +98,7 @@ bool SpinTimer_isRunning(SpinTimer* self)
 
 bool SpinTimer_isExpired(SpinTimer* self)
 {
-    if ((0 != self->hwHandler) && (0 != self->hwHandler->intControl))
+    if (0 != self->hwHandler)
     {
         self->hwHandler->intControl(SpinTimerHwHandlerIntAction_disable);
     }
@@ -112,12 +106,12 @@ bool SpinTimer_isExpired(SpinTimer* self)
     if (0 == self->hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
-        internalTick(self);
+        SpinTimer_internalTick(self);
     }
     bool isExpired = self->isExpiredFlag;
     self->isExpiredFlag = false;
     
-    if ((0 != self->hwHandler) && (0 != self->hwHandler->intControl))
+    if (0 != self->hwHandler)
     {
         self->hwHandler->intControl(SpinTimerHwHandlerIntAction_enable);
     }
@@ -130,7 +124,7 @@ void SpinTimer_tick(SpinTimer* self)
     if (0 == self->hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
-        internalTick(self);
+        SpinTimer_internalTick(self);
     }
 }
 
@@ -144,7 +138,7 @@ void SpinTimer_notifyExpired(SpinTimer* self)
             if (0 == self->hwHandler)
             {
                 // start next interval (only as long as no SpinTimerHwHandler is assigned)
-                startInterval(self);
+                SpinTimer_startInterval(self);
             }
         }
         else
@@ -185,7 +179,7 @@ void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwHandler)
     self->hwHandler = hwHandler;
 }
 
-void startInterval(SpinTimer* self)
+void SpinTimer_startInterval(SpinTimer* self)
 {
     uint32_t deltaTime = ULONG_MAX - self->currentTimeMicros;
     self->willOverflow = (deltaTime < self->delayMicros);
@@ -202,8 +196,7 @@ void startInterval(SpinTimer* self)
     }
 }
 
-
-void internalTick(SpinTimer* self)
+void SpinTimer_internalTick(SpinTimer* self)
 {
     bool intervalIsOver = false;
 
