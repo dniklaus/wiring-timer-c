@@ -9,9 +9,9 @@ typedef struct SpinTimerHwHandlerAttributes
 SpinTimerHwHandler* SpinTimerHwHandler_create(SpinTimer* spinTimer)
 {
     SpinTimerHwHandler* base = malloc(sizeof(SpinTimerHwHandler));
-    SpinTimerHwHandlerAttributes* _attr = malloc(sizeof(SpinTimerHwHandlerAttributes));
+    SpinTimerHwHandlerAttributes* attr = malloc(sizeof(SpinTimerHwHandlerAttributes));
 
-    base->attr = _attr;
+    base->attr = attr;
 
     base->attr->spinTimer = spinTimer;
 

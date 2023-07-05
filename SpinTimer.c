@@ -3,7 +3,7 @@
 #include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
-struct SpinTimer
+typedef struct SpinTimerAttributes
 {
     SpinTimerMode mode;
     bool isRunning;
@@ -16,65 +16,80 @@ struct SpinTimer
     void (*funcTimeExpired)();
     uint32_t (*funcTMicros)();
     SpinTimerHwHandler* hwHandler;
-};
+} SpinTimerHwHandlerAttributes;
 
 /**
  * @brief Evaluate time expired condition (private local function)
  */
-void SpinTimer_internalTick(SpinTimer* self);
+static void SpinTimer_internalTick(SpinTimer* self);
 
 /**
  * @brief Start the (new) interval (private local function)
  */
-void SpinTimer_startInterval(SpinTimer* self);
+static void SpinTimer_startInterval(SpinTimer* self);
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode)
 {
     SpinTimer* self = malloc(sizeof(SpinTimer));
+    SpinTimerHwHandlerAttributes* attr = malloc(sizeof(SpinTimerHwHandlerAttributes));
 
-    self->mode = mode;
-    self->isRunning = false;
-    self->isExpiredFlag = false;
-    self->willOverflow = false;
-    self->delayMicros = 0;
-    self->currentTimeMicros = 0;
-    self->triggerTimeMicros = 0;
-    self->triggerTimeMicrosUpperLimit = 0;
-    self->funcTimeExpired = 0;
-    self->funcTMicros = 0;
-    self->hwHandler = 0;
+    self->attr = attr;
+
+    self->attr->mode = mode;
+    self->attr->isRunning = false;
+    self->attr->isExpiredFlag = false;
+    self->attr->willOverflow = false;
+    self->attr->delayMicros = 0;
+    self->attr->currentTimeMicros = 0;
+    self->attr->triggerTimeMicros = 0;
+    self->attr->triggerTimeMicrosUpperLimit = 0;
+    self->attr->funcTimeExpired = 0;
+    self->attr->funcTMicros = 0;
+    self->attr->hwHandler = 0;
+
+    self->destroy = &SpinTimer_destroy;
+    self->getMode = &SpinTimer_getMode;
+    self->start = &SpinTimer_start;
+    self->cancel = &SpinTimer_cancel;
+    self->isRunning = &SpinTimer_isRunning;
+    self->isExpired = &SpinTimer_isExpired;
+    self->tick = &SpinTimer_tick;
+    self->notifyExpired = &SpinTimer_notifyExpired;
+    self->assignTimeExpiredCallback = &SpinTimer_assignTimeExpiredCallback;
+    self->assignUptimeInfoCallout = &SpinTimer_assignUptimeInfoCallout;
+    self->assignHwHandler = &SpinTimer_assignHwHandler;
 
     return self;
 }
 
 void SpinTimer_destroy(SpinTimer* self)
 {
-    self->funcTimeExpired = 0;
-    self->funcTMicros = 0;
-    self->hwHandler = 0;
+    self->attr->funcTimeExpired = 0;
+    self->attr->funcTMicros = 0;
+    self->attr->hwHandler = 0;
     free(self);
 }
 
 SpinTimerMode SpinTimer_getMode(SpinTimer* self)
 {
-    return self->mode;
+    return self->attr->mode;
 }
 
 void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
 {
-    self->isRunning = true;
-    self->delayMicros = timeMicros;
+    self->attr->isRunning = true;
+    self->attr->delayMicros = timeMicros;
 
-    if (0 != self->hwHandler)
+    if (0 != self->attr->hwHandler)
     {
-        self->hwHandler->start(self->delayMicros);
+        self->attr->hwHandler->start(self->attr->delayMicros);
     }
     else
     {
         // this runs only as long as no SpinTimerHwHandler is assigned
-        if (0 != self->funcTMicros)
+        if (0 != self->attr->funcTMicros)
         {
-            self->currentTimeMicros = self->funcTMicros();
+            self->attr->currentTimeMicros = self->attr->funcTMicros();
         }
         SpinTimer_startInterval(self);
     }
@@ -82,46 +97,45 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
 
 void SpinTimer_cancel(SpinTimer* self)
 {
-    self->isRunning = false;
-    self->isExpiredFlag = false;
+    self->attr->isRunning = false;
+    self->attr->isExpiredFlag = false;
 
-    if (0 != self->hwHandler)
+    if (0 != self->attr->hwHandler)
     {
-        self->hwHandler->stop();
+        self->attr->hwHandler->stop();
     }
 }
 
 bool SpinTimer_isRunning(SpinTimer* self)
 {
-    return self->isRunning;
+    return self->attr->isRunning;
 }
 
 bool SpinTimer_isExpired(SpinTimer* self)
 {
-    if (0 != self->hwHandler)
+    if (0 != self->attr->hwHandler)
     {
-        self->hwHandler->intControl(SpinTimerHwHandlerIntAction_disable);
+        self->attr->hwHandler->intControl(SpinTimerHwHandlerIntAction_disable);
     }
 
-    if (0 == self->hwHandler)
+    if (0 == self->attr->hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
         SpinTimer_internalTick(self);
     }
-    bool isExpired = self->isExpiredFlag;
-    self->isExpiredFlag = false;
+    bool isExpired = self->attr->isExpiredFlag;
+    self->attr->isExpiredFlag = false;
     
-    if (0 != self->hwHandler)
+    if (0 != self->attr->hwHandler)
     {
-        self->hwHandler->intControl(SpinTimerHwHandlerIntAction_enable);
+        self->attr->hwHandler->intControl(SpinTimerHwHandlerIntAction_enable);
     }
-
     return isExpired;
 }
 
 void SpinTimer_tick(SpinTimer* self)
 {
-    if (0 == self->hwHandler)
+    if (0 == self->attr->hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
         SpinTimer_internalTick(self);
@@ -133,9 +147,9 @@ void SpinTimer_notifyExpired(SpinTimer* self)
     if (0 != self)
     {
         // interval is over
-        if (self->mode == SpinTimerMode_continuous)
+        if (self->attr->mode == SpinTimerMode_continuous)
         {
-            if (0 == self->hwHandler)
+            if (0 == self->attr->hwHandler)
             {
                 // start next interval (only as long as no SpinTimerHwHandler is assigned)
                 SpinTimer_startInterval(self);
@@ -143,20 +157,20 @@ void SpinTimer_notifyExpired(SpinTimer* self)
         }
         else
         {
-            self->isRunning = false;
+            self->attr->isRunning = false;
         }
 
-        self->isExpiredFlag = true;
-        if (0 != self->funcTimeExpired)
+        self->attr->isExpiredFlag = true;
+        if (0 != self->attr->funcTimeExpired)
         {
-            self->funcTimeExpired();
+            self->attr->funcTimeExpired();
         }
     }
 }
 
 void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)())
 {
-    self->funcTimeExpired = timeExpired;
+    self->attr->funcTimeExpired = timeExpired;
 }
 
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMicros)())
@@ -164,9 +178,9 @@ void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMicros)())
     if (0 != tMicros)
     {
         // mutual exclusion: SpinTimerHwHandler operation suppressed as soon as uptime lookup callout is assigned
-        self->hwHandler = 0;
+        self->attr->hwHandler = 0;
     }
-    self->funcTMicros = tMicros;
+    self->attr->funcTMicros = tMicros;
 }
 
 void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwHandler)
@@ -174,25 +188,25 @@ void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwHandler)
     if (0 != hwHandler)
     {
         // mutual exclusion: uptime lookup suppressed as soon as SpinTimerHwHandler is assigned
-        self->funcTMicros = 0;
+        self->attr->funcTMicros = 0;
     }
-    self->hwHandler = hwHandler;
+    self->attr->hwHandler = hwHandler;
 }
 
 void SpinTimer_startInterval(SpinTimer* self)
 {
-    uint32_t deltaTime = ULONG_MAX - self->currentTimeMicros;
-    self->willOverflow = (deltaTime < self->delayMicros);
-    if (self->willOverflow)
+    uint32_t deltaTime = ULONG_MAX - self->attr->currentTimeMicros;
+    self->attr->willOverflow = (deltaTime < self->attr->delayMicros);
+    if (self->attr->willOverflow)
     {
         // overflow will occur
-        self->triggerTimeMicros = self->delayMicros - deltaTime - 1;
-        self->triggerTimeMicrosUpperLimit = self->currentTimeMicros;
+        self->attr->triggerTimeMicros = self->attr->delayMicros - deltaTime - 1;
+        self->attr->triggerTimeMicrosUpperLimit = self->attr->currentTimeMicros;
     }
     else
     {
-        self->triggerTimeMicros = self->currentTimeMicros + self->delayMicros;
-        self->triggerTimeMicrosUpperLimit = ULONG_MAX - deltaTime;
+        self->attr->triggerTimeMicros = self->attr->currentTimeMicros + self->attr->delayMicros;
+        self->attr->triggerTimeMicrosUpperLimit = ULONG_MAX - deltaTime;
     }
 }
 
@@ -200,20 +214,20 @@ void SpinTimer_internalTick(SpinTimer* self)
 {
     bool intervalIsOver = false;
 
-    if (0 != self->funcTMicros)
+    if (0 != self->attr->funcTMicros)
     {
-        self->currentTimeMicros = self->funcTMicros();
+        self->attr->currentTimeMicros = self->attr->funcTMicros();
 
         // check if interval is over as long as the timer shall be running
-        if (self->isRunning)
+        if (self->attr->isRunning)
         {
-            if (self->willOverflow)
+            if (self->attr->willOverflow)
             {
-                intervalIsOver = ((self->triggerTimeMicros <= self->currentTimeMicros) && (self->currentTimeMicros < self->triggerTimeMicrosUpperLimit));
+                intervalIsOver = ((self->attr->triggerTimeMicros <= self->attr->currentTimeMicros) && (self->attr->currentTimeMicros < self->attr->triggerTimeMicrosUpperLimit));
             }
             else
             {
-                intervalIsOver = ((self->triggerTimeMicros <= self->currentTimeMicros) || (self->currentTimeMicros < self->triggerTimeMicrosUpperLimit));
+                intervalIsOver = ((self->attr->triggerTimeMicros <= self->attr->currentTimeMicros) || (self->attr->currentTimeMicros < self->attr->triggerTimeMicrosUpperLimit));
             }
             
             if (intervalIsOver)
