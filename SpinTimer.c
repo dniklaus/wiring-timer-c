@@ -67,6 +67,7 @@ void SpinTimer_destroy(SpinTimer* self)
     self->attr->funcTimeExpired = 0;
     self->attr->funcTMicros = 0;
     self->attr->hwHandler = 0;
+    free(self->attr);
     free(self);
 }
 

@@ -26,6 +26,7 @@ SpinTimerHwHandler* SpinTimerHwHandler_create(SpinTimer* spinTimer)
 
 void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self)
 {
+    free(self->attr);
     free(self);
 }
 
