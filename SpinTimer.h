@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "SpinTimerAdapter.h"
 #include "UptimeInfo.h"
+#include "SpinTimerAction.h"
 #include "SpinTimerHwHandler.h"
 
 typedef enum SpinTimerMode
@@ -27,7 +27,8 @@ struct SpinTimer
     bool (*isExpired)(SpinTimer* self);
     void (*tick)(SpinTimer* self);
     void (*notifyExpired)(SpinTimer* self);
-    void (*assignTimeExpiredCallback)(SpinTimer* self, void (*timeExpired)());
+    void (*assignAction)(SpinTimer* self, SpinTimerAction* action);
+    SpinTimerAction* (*action)(SpinTimer* self);
     void (*assignUptimeInfoCallout)(SpinTimer* self, uint32_t (*tMillis)());
     void (*assignHwHandler)(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
 };
@@ -41,7 +42,8 @@ bool SpinTimer_isRunning(SpinTimer* self);
 bool SpinTimer_isExpired(SpinTimer* self);
 void SpinTimer_tick(SpinTimer* self);
 void SpinTimer_notifyExpired(SpinTimer* self);
-void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)());
+void SpinTimer_assignAction(SpinTimer* self, SpinTimerAction* action);
+SpinTimerAction* SpinTimer_action(SpinTimer* self);
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMillis)());
 void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
 

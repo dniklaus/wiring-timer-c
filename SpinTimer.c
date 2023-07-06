@@ -3,6 +3,10 @@
 #include "SpinTimerHwHandler.h"
 #include "SpinTimer.h"
 
+
+//-----------------------------------------------------------------------------
+// Declaration of private 
+//-----------------------------------------------------------------------------
 typedef struct SpinTimerAttributes
 {
     SpinTimerMode mode;
@@ -13,9 +17,9 @@ typedef struct SpinTimerAttributes
     uint32_t currentTimeMicros;
     uint32_t triggerTimeMicros;
     uint32_t triggerTimeMicrosUpperLimit;
-    void (*funcTimeExpired)();
     uint32_t (*funcTMicros)();
     SpinTimerHwHandler* hwHandler;
+    SpinTimerAction* action;
 } SpinTimerHwHandlerAttributes;
 
 /**
@@ -28,6 +32,9 @@ static void SpinTimer_internalTick(SpinTimer* self);
  */
 static void SpinTimer_startInterval(SpinTimer* self);
 
+//-----------------------------------------------------------------------------
+// Implementation
+//-----------------------------------------------------------------------------
 SpinTimer* SpinTimer_create(SpinTimerMode mode)
 {
     SpinTimer* self = malloc(sizeof(SpinTimer));
@@ -43,9 +50,9 @@ SpinTimer* SpinTimer_create(SpinTimerMode mode)
     self->attr->currentTimeMicros = 0;
     self->attr->triggerTimeMicros = 0;
     self->attr->triggerTimeMicrosUpperLimit = 0;
-    self->attr->funcTimeExpired = 0;
     self->attr->funcTMicros = 0;
     self->attr->hwHandler = 0;
+    self->attr->action = 0;
 
     self->destroy = &SpinTimer_destroy;
     self->getMode = &SpinTimer_getMode;
@@ -55,7 +62,8 @@ SpinTimer* SpinTimer_create(SpinTimerMode mode)
     self->isExpired = &SpinTimer_isExpired;
     self->tick = &SpinTimer_tick;
     self->notifyExpired = &SpinTimer_notifyExpired;
-    self->assignTimeExpiredCallback = &SpinTimer_assignTimeExpiredCallback;
+    self->assignAction = &SpinTimer_assignAction;
+    self->action = &SpinTimer_action;
     self->assignUptimeInfoCallout = &SpinTimer_assignUptimeInfoCallout;
     self->assignHwHandler = &SpinTimer_assignHwHandler;
 
@@ -64,9 +72,9 @@ SpinTimer* SpinTimer_create(SpinTimerMode mode)
 
 void SpinTimer_destroy(SpinTimer* self)
 {
-    self->attr->funcTimeExpired = 0;
     self->attr->funcTMicros = 0;
     self->attr->hwHandler = 0;
+    self->attr->action = 0;
     free(self->attr);
     free(self);
 }
@@ -162,16 +170,21 @@ void SpinTimer_notifyExpired(SpinTimer* self)
         }
 
         self->attr->isExpiredFlag = true;
-        if (0 != self->attr->funcTimeExpired)
+        if (0 != self->attr->action)
         {
-            self->attr->funcTimeExpired();
+            self->attr->action->timeExpired(self->attr->action);
         }
     }
 }
 
-void SpinTimer_assignTimeExpiredCallback(SpinTimer* self, void (*timeExpired)())
+void SpinTimer_assignAction(SpinTimer* self, SpinTimerAction* action)
 {
-    self->attr->funcTimeExpired = timeExpired;
+    self->attr->action = action;
+}
+
+SpinTimerAction* SpinTimer_action(SpinTimer* self)
+{
+    return self->attr->action;   
 }
 
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMicros)())
