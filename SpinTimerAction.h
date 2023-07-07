@@ -5,9 +5,11 @@ typedef struct SpinTimerAction SpinTimerAction;
 
 struct SpinTimerAction
 {
+    void (*destroy)(SpinTimerAction* base);
     void (*timeExpired)(SpinTimerAction* self); /* pure virtual */
 };
 
-void SpinTimerAction_timeExpired(SpinTimerAction* self);
+SpinTimerAction* SpinTimerAction_create();
+void SpinTimerAction_destroy(SpinTimerAction* base);
 
 #endif

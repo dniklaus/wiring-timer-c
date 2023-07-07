@@ -18,17 +18,15 @@ typedef struct SpinTimerHwHandler SpinTimerHwHandler;
 struct SpinTimerHwHandler 
 {
     struct SpinTimerHwHandlerAttributes* attr;
-    void (*destroy)(SpinTimerHwHandler* self);
+    void (*destroy)(SpinTimerHwHandler* base);
     void (*start)(uint32_t timeMicros);                           /* pure virtual */
     void (*stop)();                                               /* pure virtual */
     void (*intControl)(SpinTimerHwHandlerIntAction intAction);    /* pure virtual */
-    SpinTimer* (*spinTimer)(SpinTimerHwHandler* self);
+    SpinTimer* (*spinTimer)(SpinTimerHwHandler* base);
 };
 
 /**
  * @brief 
- * 
- * @param self 
  * @param spinTimer 
  * @return SpinTimerHwHandler* 
  */
@@ -39,18 +37,16 @@ SpinTimerHwHandler* SpinTimerHwHandler_create(SpinTimer* spinTimer);
 //-----------------------------------------------------------------------------
 /**
  * @brief 
- * 
- * @param self 
+ * @param base 
  */
-void SpinTimerHwHandler_destroy(SpinTimerHwHandler* self);
+void SpinTimerHwHandler_destroy(SpinTimerHwHandler* base);
 
 /**
  * @brief 
- * 
- * @param self 
+ * @param base 
  * @return SpinTimer* 
  */
-SpinTimer* SpinTimerHwHandler_spinTimer(SpinTimerHwHandler* self);
+SpinTimer* SpinTimerHwHandler_spinTimer(SpinTimerHwHandler* base);
 
 
 #endif
