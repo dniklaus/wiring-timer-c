@@ -91,7 +91,7 @@ void SpinTimer_start(SpinTimer* self, uint32_t timeMicros)
 
     if (0 != self->attr->hwHandler)
     {
-        self->attr->hwHandler->start(self->attr->delayMicros);
+        self->attr->hwHandler->start(self->attr->hwHandler, self->attr->delayMicros);
     }
     else
     {
@@ -111,7 +111,7 @@ void SpinTimer_cancel(SpinTimer* self)
 
     if (0 != self->attr->hwHandler)
     {
-        self->attr->hwHandler->stop();
+        self->attr->hwHandler->stop(self->attr->hwHandler);
     }
 }
 
@@ -124,7 +124,7 @@ bool SpinTimer_isExpired(SpinTimer* self)
 {
     if (0 != self->attr->hwHandler)
     {
-        self->attr->hwHandler->intControl(SpinTimerHwHandlerIntAction_disable);
+        self->attr->hwHandler->intControl(self->attr->hwHandler, SpinTimerHwHandlerIntAction_disable);
     }
 
     if (0 == self->attr->hwHandler)
@@ -137,7 +137,7 @@ bool SpinTimer_isExpired(SpinTimer* self)
     
     if (0 != self->attr->hwHandler)
     {
-        self->attr->hwHandler->intControl(SpinTimerHwHandlerIntAction_enable);
+        self->attr->hwHandler->intControl(self->attr->hwHandler, SpinTimerHwHandlerIntAction_enable);
     }
     return isExpired;
 }
