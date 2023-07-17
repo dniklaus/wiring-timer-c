@@ -15,9 +15,24 @@ typedef struct SpinTimerHwHandler SpinTimerHwHandler;
 typedef struct SpinTimerAction SpinTimerAction;
 typedef struct SpinTimer SpinTimer;
 
+typedef struct SpinTimerAttributes
+{
+    SpinTimerMode mode;
+    bool isRunning;
+    bool isExpiredFlag;
+    bool willOverflow;
+    uint32_t delayMicros;
+    uint32_t currentTimeMicros;
+    uint32_t triggerTimeMicros;
+    uint32_t triggerTimeMicrosUpperLimit;
+    uint32_t (*funcTMicros)();
+    SpinTimerHwHandler* hwHandler;
+    SpinTimerAction* action;
+} SpinTimerHwHandlerAttributes;
+
 struct SpinTimer
 {
-    struct SpinTimerAttributes* attr;
+    struct SpinTimerAttributes attr;
     SpinTimerMode (*getMode)(SpinTimer* me);
     void (*start)(SpinTimer* me, uint32_t timeMicros);
     void (*cancel)(SpinTimer* me);

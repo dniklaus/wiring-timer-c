@@ -8,20 +8,6 @@
 //-----------------------------------------------------------------------------
 // Declaration of private 
 //-----------------------------------------------------------------------------
-typedef struct SpinTimerAttributes
-{
-    SpinTimerMode mode;
-    bool isRunning;
-    bool isExpiredFlag;
-    bool willOverflow;
-    uint32_t delayMicros;
-    uint32_t currentTimeMicros;
-    uint32_t triggerTimeMicros;
-    uint32_t triggerTimeMicrosUpperLimit;
-    uint32_t (*funcTMicros)();
-    SpinTimerHwHandler* hwHandler;
-    SpinTimerAction* action;
-} SpinTimerHwHandlerAttributes;
 
 /**
  * @brief Evaluate time expired condition (private local function)
@@ -46,19 +32,17 @@ SpinTimer* SpinTimer_create(SpinTimerMode mode)
 
 void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
 {
-    static struct SpinTimerAttributes atrInst;
-    me->attr = &atrInst;
-    me->attr->mode = mode;
-    me->attr->isRunning = false;
-    me->attr->isExpiredFlag = false;
-    me->attr->willOverflow = false;
-    me->attr->delayMicros = 0;
-    me->attr->currentTimeMicros = 0;
-    me->attr->triggerTimeMicros = 0;
-    me->attr->triggerTimeMicrosUpperLimit = 0;
-    me->attr->funcTMicros = 0;
-    me->attr->hwHandler = 0;
-    me->attr->action = 0;
+    me->attr.mode = mode;
+    me->attr.isRunning = false;
+    me->attr.isExpiredFlag = false;
+    me->attr.willOverflow = false;
+    me->attr.delayMicros = 0;
+    me->attr.currentTimeMicros = 0;
+    me->attr.triggerTimeMicros = 0;
+    me->attr.triggerTimeMicrosUpperLimit = 0;
+    me->attr.funcTMicros = 0;
+    me->attr.hwHandler = 0;
+    me->attr.action = 0;
 
     me->getMode = &SpinTimer_getMode;
     me->start = &SpinTimer_start;
@@ -75,33 +59,32 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
 
 void SpinTimer_destroy(SpinTimer* me)
 {
-    me->attr->funcTMicros = 0;
-    me->attr->hwHandler = 0;
-    me->attr->action = 0;
-    free(me->attr);
+    me->attr.funcTMicros = 0;
+    me->attr.hwHandler = 0;
+    me->attr.action = 0;
     free(me);
 }
 
 SpinTimerMode SpinTimer_getMode(SpinTimer* me)
 {
-    return me->attr->mode;
+    return me->attr.mode;
 }
 
 void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
 {
-    me->attr->isRunning = true;
-    me->attr->delayMicros = timeMicros;
+    me->attr.isRunning = true;
+    me->attr.delayMicros = timeMicros;
 
-    if (0 != me->attr->hwHandler)
+    if (0 != me->attr.hwHandler)
     {
-        me->attr->hwHandler->start(me->attr->hwHandler, me->attr->delayMicros);
+        me->attr.hwHandler->start(me->attr.hwHandler, me->attr.delayMicros);
     }
     else
     {
         // this runs only as long as no SpinTimerHwHandler is assigned
-        if (0 != me->attr->funcTMicros)
+        if (0 != me->attr.funcTMicros)
         {
-            me->attr->currentTimeMicros = me->attr->funcTMicros();
+            me->attr.currentTimeMicros = me->attr.funcTMicros();
         }
         SpinTimer_startInterval(me);
     }
@@ -109,45 +92,45 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
 
 void SpinTimer_cancel(SpinTimer* me)
 {
-    me->attr->isRunning = false;
-    me->attr->isExpiredFlag = false;
+    me->attr.isRunning = false;
+    me->attr.isExpiredFlag = false;
 
-    if (0 != me->attr->hwHandler)
+    if (0 != me->attr.hwHandler)
     {
-        me->attr->hwHandler->stop(me->attr->hwHandler);
+        me->attr.hwHandler->stop(me->attr.hwHandler);
     }
 }
 
 bool SpinTimer_isRunning(SpinTimer* me)
 {
-    return me->attr->isRunning;
+    return me->attr.isRunning;
 }
 
 bool SpinTimer_isExpired(SpinTimer* me)
 {
-    if (0 != me->attr->hwHandler)
+    if (0 != me->attr.hwHandler)
     {
-        me->attr->hwHandler->intControl(me->attr->hwHandler, SpinTimerHwHandlerIntAction_disable);
+        me->attr.hwHandler->intControl(me->attr.hwHandler, SpinTimerHwHandlerIntAction_disable);
     }
 
-    if (0 == me->attr->hwHandler)
+    if (0 == me->attr.hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
         SpinTimer_internalTick(me);
     }
-    bool isExpired = me->attr->isExpiredFlag;
-    me->attr->isExpiredFlag = false;
+    bool isExpired = me->attr.isExpiredFlag;
+    me->attr.isExpiredFlag = false;
     
-    if (0 != me->attr->hwHandler)
+    if (0 != me->attr.hwHandler)
     {
-        me->attr->hwHandler->intControl(me->attr->hwHandler, SpinTimerHwHandlerIntAction_enable);
+        me->attr.hwHandler->intControl(me->attr.hwHandler, SpinTimerHwHandlerIntAction_enable);
     }
     return isExpired;
 }
 
 void SpinTimer_tick(SpinTimer* me)
 {
-    if (0 == me->attr->hwHandler)
+    if (0 == me->attr.hwHandler)
     {
         // runs only as long as no SpinTimerHwHandler is assigned
         SpinTimer_internalTick(me);
@@ -159,9 +142,10 @@ void SpinTimer_notifyExpired(SpinTimer* me)
     if (0 != me)
     {
         // interval is over
-        if (me->attr->mode == SpinTimerMode_continuous)
+        if (me->attr.mode == SpinTimerMode_continuous)
         {
-            if (0 == me->attr->hwHandler)
+            // in continuous mode
+            if (0 == me->attr.hwHandler)
             {
                 // start next interval (only as long as no SpinTimerHwHandler is assigned)
                 SpinTimer_startInterval(me);
@@ -169,25 +153,26 @@ void SpinTimer_notifyExpired(SpinTimer* me)
         }
         else
         {
-            me->attr->isRunning = false;
+            // in one-shot mode
+            me->attr.isRunning = false;
         }
 
-        me->attr->isExpiredFlag = true;
-        if (0 != me->attr->action)
+        me->attr.isExpiredFlag = true;
+        if (0 != me->attr.action)
         {
-            me->attr->action->timeExpired(me->attr->action);
+            me->attr.action->timeExpired(me->attr.action);
         }
     }
 }
 
 void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action)
 {
-    me->attr->action = action;
+    me->attr.action = action;
 }
 
 SpinTimerAction* SpinTimer_action(SpinTimer* me)
 {
-    return me->attr->action;   
+    return me->attr.action;   
 }
 
 void SpinTimer_assignUptimeInfoCallout(SpinTimer* me, uint32_t (*tMicros)())
@@ -195,9 +180,9 @@ void SpinTimer_assignUptimeInfoCallout(SpinTimer* me, uint32_t (*tMicros)())
     if (0 != tMicros)
     {
         // mutual exclusion: SpinTimerHwHandler operation suppressed as soon as uptime lookup callout is assigned
-        me->attr->hwHandler = 0;
+        me->attr.hwHandler = 0;
     }
-    me->attr->funcTMicros = tMicros;
+    me->attr.funcTMicros = tMicros;
 }
 
 void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwHandler)
@@ -205,46 +190,46 @@ void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwHandler)
     if (0 != hwHandler)
     {
         // mutual exclusion: uptime lookup suppressed as soon as SpinTimerHwHandler is assigned
-        me->attr->funcTMicros = 0;
+        me->attr.funcTMicros = 0;
     }
-    me->attr->hwHandler = hwHandler;
+    me->attr.hwHandler = hwHandler;
 }
 
-void SpinTimer_startInterval(SpinTimer* me)
+static void SpinTimer_startInterval(SpinTimer* me)
 {
-    uint32_t deltaTime = ULONG_MAX - me->attr->currentTimeMicros;
-    me->attr->willOverflow = (deltaTime < me->attr->delayMicros);
-    if (me->attr->willOverflow)
+    uint32_t deltaTime = ULONG_MAX - me->attr.currentTimeMicros;
+    me->attr.willOverflow = (deltaTime < me->attr.delayMicros);
+    if (me->attr.willOverflow)
     {
         // overflow will occur
-        me->attr->triggerTimeMicros = me->attr->delayMicros - deltaTime - 1;
-        me->attr->triggerTimeMicrosUpperLimit = me->attr->currentTimeMicros;
+        me->attr.triggerTimeMicros = me->attr.delayMicros - deltaTime - 1;
+        me->attr.triggerTimeMicrosUpperLimit = me->attr.currentTimeMicros;
     }
     else
     {
-        me->attr->triggerTimeMicros = me->attr->currentTimeMicros + me->attr->delayMicros;
-        me->attr->triggerTimeMicrosUpperLimit = ULONG_MAX - deltaTime;
+        me->attr.triggerTimeMicros = me->attr.currentTimeMicros + me->attr.delayMicros;
+        me->attr.triggerTimeMicrosUpperLimit = ULONG_MAX - deltaTime;
     }
 }
 
-void SpinTimer_internalTick(SpinTimer* me)
+static void SpinTimer_internalTick(SpinTimer* me)
 {
     bool intervalIsOver = false;
 
-    if (0 != me->attr->funcTMicros)
+    if (0 != me->attr.funcTMicros)
     {
-        me->attr->currentTimeMicros = me->attr->funcTMicros();
+        me->attr.currentTimeMicros = me->attr.funcTMicros();
 
         // check if interval is over as long as the timer shall be running
-        if (me->attr->isRunning)
+        if (me->attr.isRunning)
         {
-            if (me->attr->willOverflow)
+            if (me->attr.willOverflow)
             {
-                intervalIsOver = ((me->attr->triggerTimeMicros <= me->attr->currentTimeMicros) && (me->attr->currentTimeMicros < me->attr->triggerTimeMicrosUpperLimit));
+                intervalIsOver = ((me->attr.triggerTimeMicros <= me->attr.currentTimeMicros) && (me->attr.currentTimeMicros < me->attr.triggerTimeMicrosUpperLimit));
             }
             else
             {
-                intervalIsOver = ((me->attr->triggerTimeMicros <= me->attr->currentTimeMicros) || (me->attr->currentTimeMicros < me->attr->triggerTimeMicrosUpperLimit));
+                intervalIsOver = ((me->attr.triggerTimeMicros <= me->attr.currentTimeMicros) || (me->attr.currentTimeMicros < me->attr.triggerTimeMicrosUpperLimit));
             }
             
             if (intervalIsOver)
