@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "UptimeInfo.h"
-#include "SpinTimerAction.h"
-#include "SpinTimerHwHandler.h"
 
 typedef enum SpinTimerMode
 {
@@ -14,37 +12,54 @@ typedef enum SpinTimerMode
 } SpinTimerMode;
     
 typedef struct SpinTimerHwHandler SpinTimerHwHandler;
+typedef struct SpinTimerAction SpinTimerAction;
 typedef struct SpinTimer SpinTimer;
+
+typedef struct SpinTimerAttributes
+{
+    SpinTimerMode mode;
+    bool isRunning;
+    bool isExpiredFlag;
+    bool willOverflow;
+    uint32_t delayMicros;
+    uint32_t currentTimeMicros;
+    uint32_t triggerTimeMicros;
+    uint32_t triggerTimeMicrosUpperLimit;
+    uint32_t (*funcTMicros)();
+    SpinTimerHwHandler* hwHandler;
+    SpinTimerAction* action;
+} SpinTimerHwHandlerAttributes;
 
 struct SpinTimer
 {
-    struct SpinTimerAttributes* attr;
-    void (*destroy)(SpinTimer* self);
-    SpinTimerMode (*getMode)(SpinTimer* self);
-    void (*start)(SpinTimer* self, uint32_t timeMicros);
-    void (*cancel)(SpinTimer* self);
-    bool (*isRunning)(SpinTimer* self);
-    bool (*isExpired)(SpinTimer* self);
-    void (*tick)(SpinTimer* self);
-    void (*notifyExpired)(SpinTimer* self);
-    void (*assignAction)(SpinTimer* self, SpinTimerAction* action);
-    SpinTimerAction* (*action)(SpinTimer* self);
-    void (*assignUptimeInfoCallout)(SpinTimer* self, uint32_t (*tMillis)());
-    void (*assignHwHandler)(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
+    struct SpinTimerAttributes attr;
+    SpinTimerMode (*getMode)(SpinTimer* me);
+    void (*start)(SpinTimer* me, uint32_t timeMicros);
+    void (*cancel)(SpinTimer* me);
+    bool (*isRunning)(SpinTimer* me);
+    bool (*isExpired)(SpinTimer* me);
+    void (*tick)(SpinTimer* me);
+    void (*notifyExpired)(SpinTimer* me);
+    void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
+    SpinTimerAction* (*action)(SpinTimer* me);
+    void (*assignUptimeInfoCallout)(SpinTimer* me, uint32_t (*tMillis)());
+    void (*assignHwHandler)(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 };
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode);
-void SpinTimer_destroy(SpinTimer* self);
-SpinTimerMode SpinTimer_getMode(SpinTimer* self);
-void SpinTimer_start(SpinTimer* self, uint32_t timeMicros);
-void SpinTimer_cancel(SpinTimer* self);
-bool SpinTimer_isRunning(SpinTimer* self);
-bool SpinTimer_isExpired(SpinTimer* self);
-void SpinTimer_tick(SpinTimer* self);
-void SpinTimer_notifyExpired(SpinTimer* self);
-void SpinTimer_assignAction(SpinTimer* self, SpinTimerAction* action);
-SpinTimerAction* SpinTimer_action(SpinTimer* self);
-void SpinTimer_assignUptimeInfoCallout(SpinTimer* self, uint32_t (*tMillis)());
-void SpinTimer_assignHwHandler(SpinTimer* self, SpinTimerHwHandler* hwTimerHandler);
+void SpinTimer_init(SpinTimer* me, SpinTimerMode mode);
+void SpinTimer_destroy(SpinTimer* me);
+
+SpinTimerMode SpinTimer_getMode(SpinTimer* me);
+void SpinTimer_start(SpinTimer* me, uint32_t timeMicros);
+void SpinTimer_cancel(SpinTimer* me);
+bool SpinTimer_isRunning(SpinTimer* me);
+bool SpinTimer_isExpired(SpinTimer* me);
+void SpinTimer_tick(SpinTimer* me);
+void SpinTimer_notifyExpired(SpinTimer* me);
+void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
+SpinTimerAction* SpinTimer_action(SpinTimer* me);
+void SpinTimer_assignUptimeInfoCallout(SpinTimer* me, uint32_t (*tMillis)());
+void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 
 #endif
