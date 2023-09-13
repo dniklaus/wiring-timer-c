@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "UptimeInfo.h"
 
 typedef enum SpinTimerMode
 {
@@ -25,7 +24,6 @@ typedef struct SpinTimerAttributes
     uint32_t currentTimeMicros;
     uint32_t triggerTimeMicros;
     uint32_t triggerTimeMicrosUpperLimit;
-    uint32_t (*funcTMicros)();
     SpinTimerHwHandler* hwHandler;
     SpinTimerAction* action;
 } SpinTimerHwHandlerAttributes;
@@ -38,11 +36,9 @@ struct SpinTimer
     void (*cancel)(SpinTimer* me);
     bool (*isRunning)(SpinTimer* me);
     bool (*isExpired)(SpinTimer* me);
-    void (*tick)(SpinTimer* me);
     void (*notifyExpired)(SpinTimer* me);
     void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
     SpinTimerAction* (*action)(SpinTimer* me);
-    void (*assignUptimeInfoCallout)(SpinTimer* me, uint32_t (*tMillis)());
     void (*assignHwHandler)(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 };
 
@@ -55,11 +51,9 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros);
 void SpinTimer_cancel(SpinTimer* me);
 bool SpinTimer_isRunning(SpinTimer* me);
 bool SpinTimer_isExpired(SpinTimer* me);
-void SpinTimer_tick(SpinTimer* me);
 void SpinTimer_notifyExpired(SpinTimer* me);
 void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
 SpinTimerAction* SpinTimer_action(SpinTimer* me);
-void SpinTimer_assignUptimeInfoCallout(SpinTimer* me, uint32_t (*tMillis)());
 void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 
 #endif
