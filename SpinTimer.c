@@ -5,6 +5,14 @@
 #include "SpinTimer.h"
 
 //-----------------------------------------------------------------------------
+// Declaration of private 
+//-----------------------------------------------------------------------------
+/**
+ * @brief Start the (new) interval (private local function)
+ */
+static void SpinTimer_startInterval(SpinTimer* me);
+
+//-----------------------------------------------------------------------------
 // Implementation
 //-----------------------------------------------------------------------------
 SpinTimer* SpinTimer_create(SpinTimerMode mode)
@@ -56,10 +64,7 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
     me->attr.isRunning = true;
     me->attr.delayMicros = timeMicros;
 
-    if (0 != me->attr.hwHandler)
-    {
-        me->attr.hwHandler->start(me->attr.hwHandler, me->attr.delayMicros);
-    }
+    SpinTimer_startInterval(me);
 }
 
 void SpinTimer_cancel(SpinTimer* me)
@@ -100,7 +105,11 @@ void SpinTimer_notifyExpired(SpinTimer* me)
     if (0 != me)
     {
         // interval is over
-        if (me->attr.mode == SpinTimerMode_oneShot)
+        if (me->attr.mode == SpinTimerMode_continuous)
+        {
+            SpinTimer_startInterval(me);
+        }
+        else
         {
             // in one-shot mode: timer gets stopped now
             me->attr.isRunning = false;
@@ -127,4 +136,12 @@ SpinTimerAction* SpinTimer_action(SpinTimer* me)
 void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwHandler)
 {
     me->attr.hwHandler = hwHandler;
+}
+
+static void SpinTimer_startInterval(SpinTimer* me)
+{
+    if (0 != me->attr.hwHandler)
+    {
+        me->attr.hwHandler->start(me->attr.hwHandler, me->attr.delayMicros);
+    }
 }
