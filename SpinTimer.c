@@ -1,6 +1,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include "SpinTimerHwHandler.h"
+#include "SpinTimerUptimeInfo.h"
 #include "SpinTimerAction.h"
 #include "SpinTimer.h"
 
@@ -11,6 +12,11 @@
  * @brief Start the (new) interval (private local function)
  */
 static void SpinTimer_startInterval(SpinTimer* me);
+
+/**
+ * @brief Internal tick method, evaluates the expired state.
+ */
+static void SpinTimer_internalTick(SpinTimer* me);
 
 //-----------------------------------------------------------------------------
 // Implementation
@@ -33,6 +39,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.currentTimeMicros = 0;
     me->attr.triggerTimeMicros = 0;
     me->attr.triggerTimeMicrosUpperLimit = 0;
+    me->attr.maxUptimeValue = 0;
     me->attr.hwHandler = 0;
     me->attr.action = 0;
 
@@ -41,6 +48,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->cancel = &SpinTimer_cancel;
     me->isRunning = &SpinTimer_isRunning;
     me->isExpired = &SpinTimer_isExpired;
+    me->tick = &SpinTimer_tick;
     me->notifyExpired = &SpinTimer_notifyExpired;
     me->assignAction = &SpinTimer_assignAction;
     me->action = &SpinTimer_action;
@@ -63,7 +71,13 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
 {
     me->attr.isRunning = true;
     me->attr.delayMicros = timeMicros;
-
+    
+    if (0 != SpinTimerUptimeInfo_instance())
+    {
+        me->attr.currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());
+        me->attr.maxUptimeValue = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
+    }
+    
     SpinTimer_startInterval(me);
 }
 
@@ -89,6 +103,10 @@ bool SpinTimer_isExpired(SpinTimer* me)
     {
         me->attr.hwHandler->intControl(me->attr.hwHandler, SpinTimerHwHandlerIntAction_disable);
     }
+    else
+    {
+        SpinTimer_internalTick(me);
+    }
 
     bool isExpired = me->attr.isExpiredFlag;
     me->attr.isExpiredFlag = false;
@@ -100,6 +118,15 @@ bool SpinTimer_isExpired(SpinTimer* me)
     return isExpired;
 }
 
+void SpinTimer_tick(SpinTimer* me)
+{
+    if (0 == me->attr.hwHandler)
+    {
+        // runs only as long as no SpinTimerHwHandler is assigned
+        SpinTimer_internalTick(me);
+    }
+}
+
 void SpinTimer_notifyExpired(SpinTimer* me)
 {
     if (0 != me)
@@ -107,6 +134,7 @@ void SpinTimer_notifyExpired(SpinTimer* me)
         // interval is over
         if (me->attr.mode == SpinTimerMode_continuous)
         {
+            // start next interval
             SpinTimer_startInterval(me);
         }
         else
@@ -143,5 +171,51 @@ static void SpinTimer_startInterval(SpinTimer* me)
     if (0 != me->attr.hwHandler)
     {
         me->attr.hwHandler->start(me->attr.hwHandler, me->attr.delayMicros);
+    }
+    
+    if (0 != SpinTimerUptimeInfo_instance())
+    {
+        uint32_t deltaTime = me->attr.maxUptimeValue - me->attr.currentTimeMicros;
+        me->attr.willOverflow = (deltaTime < me->attr.delayMicros);
+        if (me->attr.willOverflow)
+        {
+            // overflow will occur
+            me->attr.triggerTimeMicros = me->attr.delayMicros - deltaTime - 1;
+            me->attr.triggerTimeMicrosUpperLimit = me->attr.currentTimeMicros;
+        }
+        else
+        {
+            me->attr.triggerTimeMicros = me->attr.currentTimeMicros + me->attr.delayMicros;
+            me->attr.triggerTimeMicrosUpperLimit = me->attr.maxUptimeValue - deltaTime;
+        }        
+    }
+}
+
+static void SpinTimer_internalTick(SpinTimer* me)
+{
+    bool intervalIsOver = false;
+
+    if (0 != SpinTimerUptimeInfo_instance())
+    {
+        // uptime info object is ready
+        me->attr.currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());
+
+        // check if interval is over as long as the timer shall be running
+        if (me->attr.isRunning)
+        {
+            if (me->attr.willOverflow)
+            {
+                intervalIsOver = ((me->attr.triggerTimeMicros <= me->attr.currentTimeMicros) && (me->attr.currentTimeMicros < me->attr.triggerTimeMicrosUpperLimit));
+            }
+            else
+            {
+                intervalIsOver = ((me->attr.triggerTimeMicros <= me->attr.currentTimeMicros) || (me->attr.currentTimeMicros < me->attr.triggerTimeMicrosUpperLimit));
+            }
+            
+            if (intervalIsOver)
+            {                
+                me->notifyExpired(me);
+            }
+        }
     }
 }

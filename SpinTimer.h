@@ -24,6 +24,7 @@ typedef struct SpinTimerAttributes
     uint32_t currentTimeMicros;
     uint32_t triggerTimeMicros;
     uint32_t triggerTimeMicrosUpperLimit;
+    uint32_t maxUptimeValue;
     SpinTimerHwHandler* hwHandler;
     SpinTimerAction* action;
 } SpinTimerHwHandlerAttributes;
@@ -36,6 +37,7 @@ struct SpinTimer
     void (*cancel)(SpinTimer* me);
     bool (*isRunning)(SpinTimer* me);
     bool (*isExpired)(SpinTimer* me);
+    void (*tick)(SpinTimer* me);
     void (*notifyExpired)(SpinTimer* me);
     void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
     SpinTimerAction* (*action)(SpinTimer* me);
@@ -51,6 +53,7 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros);
 void SpinTimer_cancel(SpinTimer* me);
 bool SpinTimer_isRunning(SpinTimer* me);
 bool SpinTimer_isExpired(SpinTimer* me);
+void SpinTimer_tick(SpinTimer* me);
 void SpinTimer_notifyExpired(SpinTimer* me);
 void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
 SpinTimerAction* SpinTimer_action(SpinTimer* me);
