@@ -13,6 +13,7 @@ void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me);
 
 // Singleton
 static SpinTimerUptimeInfo* s_spinTimerUptimeInfo = 0;
+
 SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance()
 {
     if (0 == s_spinTimerUptimeInfo)

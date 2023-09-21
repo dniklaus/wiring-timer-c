@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <stdlib.h>
+#include "SpinTimerContext.h"
 #include "SpinTimerUptimeInfo.h"
 #include "SpinTimerAction.h"
 #include "SpinTimer.h"
@@ -40,6 +41,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.triggerTimeMicrosUpperLimit = 0;
     me->attr.maxUptimeValue = 0;
     me->attr.action = 0;
+    me->attr.next = 0;
 
     me->getMode = &SpinTimer_getMode;
     me->start = &SpinTimer_start;
@@ -50,11 +52,16 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->notifyExpired = &SpinTimer_notifyExpired;
     me->assignAction = &SpinTimer_assignAction;
     me->action = &SpinTimer_action;
+    me->next = &SpinTimer_next;
+    me->setNext = &SpinTimer_setNext;
+
+    SpinTimerContext_instance()->attach(SpinTimerContext_instance(), me);
 }
 
 void SpinTimer_destroy(SpinTimer* me)
 {
     me->attr.action = 0;
+    SpinTimerContext_instance()->detach(SpinTimerContext_instance(), me);
     free(me);
 }
 
@@ -182,4 +189,14 @@ static void SpinTimer_internalTick(SpinTimer* me)
             }
         }
     }
+}
+
+SpinTimer* SpinTimer_next(SpinTimer* me)
+{
+  return me->attr.next;
+}
+
+void SpinTimer_setNext(SpinTimer* me, SpinTimer* timer)
+{
+  me->attr.next = timer;
 }

@@ -25,11 +25,12 @@ typedef struct SpinTimerAttributes
     uint32_t triggerTimeMicrosUpperLimit;
     uint32_t maxUptimeValue;
     SpinTimerAction* action;
+    SpinTimer* next;
 } SpinTimerAttributes;
 
 struct SpinTimer
 {
-    struct SpinTimerAttributes attr;
+    SpinTimerAttributes attr;
     SpinTimerMode (*getMode)(SpinTimer* me);
     void (*start)(SpinTimer* me, uint32_t timeMicros);
     void (*cancel)(SpinTimer* me);
@@ -39,6 +40,8 @@ struct SpinTimer
     void (*notifyExpired)(SpinTimer* me);
     void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
     SpinTimerAction* (*action)(SpinTimer* me);
+    SpinTimer* (*next)(SpinTimer* me);
+    void (*setNext)(SpinTimer* me, SpinTimer* next);
 };
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode);
@@ -54,5 +57,17 @@ void SpinTimer_tick(SpinTimer* me);
 void SpinTimer_notifyExpired(SpinTimer* me);
 void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
 SpinTimerAction* SpinTimer_action(SpinTimer* me);
+
+/**
+ * Get next SpinTimer object pointer out of the linked list containing timers.
+ * @return SpinTimer object pointer or 0 if current object is the trailing list element.
+ */
+SpinTimer* SpinTimer_next(SpinTimer* me);
+
+/**
+ * Set next SpinTimer object of the linked list containing timers.
+ * @param timer SpinTimer object pointer to be set as the next element of the list.
+ */
+void SpinTimer_setNext(SpinTimer* me, SpinTimer* next);
 
 #endif
