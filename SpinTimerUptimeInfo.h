@@ -34,8 +34,6 @@ struct SpinTimerUptimeInfo
 };
 
 SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance();
-SpinTimerUptimeInfo* SpinTimerUptimeInfo_create();
-void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me);
 void SpinTimerUptimeInfo_destroy(SpinTimerUptimeInfo* me);
 
 /**

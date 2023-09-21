@@ -6,11 +6,19 @@
  */
 #include "SpinTimerUptimeInfo.h"
 
+
+// Private functions
+SpinTimerUptimeInfo* SpinTimerUptimeInfo_create();
+void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me);
+
 // Singleton
 static SpinTimerUptimeInfo* s_spinTimerUptimeInfo = 0;
-
 SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance()
 {
+    if (0 == s_spinTimerUptimeInfo)
+    {
+        s_spinTimerUptimeInfo = SpinTimerUptimeInfo_create();
+    }
     return s_spinTimerUptimeInfo;
 }
 
@@ -33,6 +41,7 @@ void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me)
 
 void SpinTimerUptimeInfo_destroy(SpinTimerUptimeInfo* me)
 {
+    s_spinTimerUptimeInfo = 0;
     free(me);
 }
 
