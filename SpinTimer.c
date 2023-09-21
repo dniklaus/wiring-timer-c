@@ -1,6 +1,5 @@
 #include <limits.h>
 #include <stdlib.h>
-#include "SpinTimerHwHandler.h"
 #include "SpinTimerUptimeInfo.h"
 #include "SpinTimerAction.h"
 #include "SpinTimer.h"
@@ -40,7 +39,6 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.triggerTimeMicros = 0;
     me->attr.triggerTimeMicrosUpperLimit = 0;
     me->attr.maxUptimeValue = 0;
-    me->attr.hwHandler = 0;
     me->attr.action = 0;
 
     me->getMode = &SpinTimer_getMode;
@@ -52,12 +50,10 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->notifyExpired = &SpinTimer_notifyExpired;
     me->assignAction = &SpinTimer_assignAction;
     me->action = &SpinTimer_action;
-    me->assignHwHandler = &SpinTimer_assignHwHandler;
 }
 
 void SpinTimer_destroy(SpinTimer* me)
 {
-    me->attr.hwHandler = 0;
     me->attr.action = 0;
     free(me);
 }
@@ -85,11 +81,6 @@ void SpinTimer_cancel(SpinTimer* me)
 {
     me->attr.isRunning = false;
     me->attr.isExpiredFlag = false;
-
-    if (0 != me->attr.hwHandler)
-    {
-        me->attr.hwHandler->stop(me->attr.hwHandler);
-    }
 }
 
 bool SpinTimer_isRunning(SpinTimer* me)
@@ -99,32 +90,15 @@ bool SpinTimer_isRunning(SpinTimer* me)
 
 bool SpinTimer_isExpired(SpinTimer* me)
 {
-    if (0 != me->attr.hwHandler)
-    {
-        me->attr.hwHandler->intControl(me->attr.hwHandler, SpinTimerHwHandlerIntAction_disable);
-    }
-    else
-    {
-        SpinTimer_internalTick(me);
-    }
-
+    SpinTimer_internalTick(me);
     bool isExpired = me->attr.isExpiredFlag;
     me->attr.isExpiredFlag = false;
-    
-    if (0 != me->attr.hwHandler)
-    {
-        me->attr.hwHandler->intControl(me->attr.hwHandler, SpinTimerHwHandlerIntAction_enable);
-    }
     return isExpired;
 }
 
 void SpinTimer_tick(SpinTimer* me)
 {
-    if (0 == me->attr.hwHandler)
-    {
-        // runs only as long as no SpinTimerHwHandler is assigned
-        SpinTimer_internalTick(me);
-    }
+    SpinTimer_internalTick(me);
 }
 
 void SpinTimer_notifyExpired(SpinTimer* me)
@@ -161,18 +135,8 @@ SpinTimerAction* SpinTimer_action(SpinTimer* me)
     return me->attr.action;   
 }
 
-void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwHandler)
-{
-    me->attr.hwHandler = hwHandler;
-}
-
 static void SpinTimer_startInterval(SpinTimer* me)
 {
-    if (0 != me->attr.hwHandler)
-    {
-        me->attr.hwHandler->start(me->attr.hwHandler, me->attr.delayMicros);
-    }
-    
     if (0 != SpinTimerUptimeInfo_instance())
     {
         uint32_t deltaTime = me->attr.maxUptimeValue - me->attr.currentTimeMicros;

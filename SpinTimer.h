@@ -10,7 +10,6 @@ typedef enum SpinTimerMode
     SpinTimerMode_continuous = 1
 } SpinTimerMode;
     
-typedef struct SpinTimerHwHandler SpinTimerHwHandler;
 typedef struct SpinTimerAction SpinTimerAction;
 typedef struct SpinTimer SpinTimer;
 
@@ -25,9 +24,8 @@ typedef struct SpinTimerAttributes
     uint32_t triggerTimeMicros;
     uint32_t triggerTimeMicrosUpperLimit;
     uint32_t maxUptimeValue;
-    SpinTimerHwHandler* hwHandler;
     SpinTimerAction* action;
-} SpinTimerHwHandlerAttributes;
+} SpinTimerAttributes;
 
 struct SpinTimer
 {
@@ -41,7 +39,6 @@ struct SpinTimer
     void (*notifyExpired)(SpinTimer* me);
     void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
     SpinTimerAction* (*action)(SpinTimer* me);
-    void (*assignHwHandler)(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 };
 
 SpinTimer* SpinTimer_create(SpinTimerMode mode);
@@ -57,6 +54,5 @@ void SpinTimer_tick(SpinTimer* me);
 void SpinTimer_notifyExpired(SpinTimer* me);
 void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
 SpinTimerAction* SpinTimer_action(SpinTimer* me);
-void SpinTimer_assignHwHandler(SpinTimer* me, SpinTimerHwHandler* hwTimerHandler);
 
 #endif
