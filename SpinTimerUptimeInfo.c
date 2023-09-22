@@ -32,8 +32,6 @@ SpinTimerUptimeInfo* SpinTimerUptimeInfo_create()
 
 void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me)
 {
-    s_spinTimerUptimeInfo = me;
-    
     me->attr.adapter = 0;
     me->setAdapter = &SpinTimerUptimeInfo_setAdapter;
     me->currentTimeMicros = &SpinTimerUptimeInfo_currentTimeMicros;
