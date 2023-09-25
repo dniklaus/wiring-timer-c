@@ -79,6 +79,4 @@ void SpinTimerContext_detach(SpinTimerContext* me, SpinTimer* timer);
  */
 void SpinTimerContext_handleTick(SpinTimerContext* me);
 
-SpinTimer* m_timer; 
-
 #endif /* SPINTIMERCONTEX_H_ */
