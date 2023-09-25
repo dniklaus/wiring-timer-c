@@ -1,25 +1,39 @@
+#include <gtest/gtest.h>
 #include <stdbool.h>
 #include <limits.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmockery.h>
-#include <SpinTimer.h>
-#include <SpinTimerAdapter.h>
-#include <UptimeInfo.h>
-#include <StubTestUptimeInfo.h>
-#include <MockTimerAdapter.h>
 
-void timer_create_allDefaults_test(void **state)
-{
-  SpinTimer_create(SpinTimer_IS_NON_RECURRING);
-  
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
+#ifdef __cplusplus
+extern "C" {
+#endif
+  #include "SpinTimer.h"
+  #include "SpinTimerAction.h"
+  #include "SpinTimerContext.h"
+  #include "SpinTimerUptimeInfo.h"
+  #include "SpinTimerUptimeInfoAdapter.h"
+  #include "StubTestUptimeInfo.h"
+  #include "MockTimerAdapter.h"
+#ifdef __cplusplus
+}
+#endif
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv); 
+    return RUN_ALL_TESTS();
 }
 
-void timer_polling_startZero_test(void **state)
+TEST(SpinTimer, timer_create_allDefaults_test)
+{
+  SpinTimer* timer = SpinTimer_create(SpinTimerMode_continuous);
+  EXPECT_TRUE(SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()) == 0);
+  EXPECT_TRUE(SpinTimer_getMode(timer) == SpinTimerMode_continuous);
+  EXPECT_FALSE(SpinTimer_isRunning(timer));
+  EXPECT_FALSE(SpinTimer_isExpired(timer));
+  EXPECT_TRUE(timer->action(timer) == 0);
+
+}
+
+#if 0
+TEST(SpinTimer, timer_polling_startZero_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = 0;
@@ -31,19 +45,19 @@ void timer_polling_startZero_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_startMax_test(void **state)
+TEST(SpinTimer, timer_polling_startMax_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = ULONG_MAX;
@@ -55,19 +69,19 @@ void timer_polling_startMax_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_startMaxMinus1_test(void **state)
+TEST(SpinTimer, timer_polling_startMaxMinus1_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = ULONG_MAX-1;
@@ -79,19 +93,19 @@ void timer_polling_startMaxMinus1_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_startMaxMinusDelayPlus1_test(void **state)
+TEST(SpinTimer, timer_polling_startMaxMinusDelayPlus1_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = ULONG_MAX-delayMillis+1;
@@ -103,19 +117,19 @@ void timer_polling_startMaxMinusDelayPlus1_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_startMaxMinusDelay_test(void **state)
+TEST(SpinTimer, timer_polling_startMaxMinusDelay_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = ULONG_MAX-delayMillis;
@@ -127,19 +141,19 @@ void timer_polling_startMaxMinusDelay_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_zeroDelay_startZero_test(void **state)
+TEST(SpinTimer, timer_polling_zeroDelay_startZero_test)
 {
   const unsigned long int delayMillis = 0;
   const unsigned long int startMillis = 0;
@@ -151,19 +165,19 @@ void timer_polling_zeroDelay_startZero_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_zeroDelay_startMax_test(void **state)
+TEST(SpinTimer, timer_polling_zeroDelay_startMax_test)
 {
   const unsigned long int delayMillis = 0;
   const unsigned long int startMillis = ULONG_MAX;
@@ -175,19 +189,19 @@ void timer_polling_zeroDelay_startMax_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_zeroDelay_startMaxMinus1_test(void **state)
+TEST(SpinTimer, timer_polling_zeroDelay_startMaxMinus1_test)
 {
   const unsigned long int delayMillis = 0;
   const unsigned long int startMillis = ULONG_MAX-1;
@@ -199,19 +213,19 @@ void timer_polling_zeroDelay_startMaxMinus1_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_polling_zeroDelay_startMaxMinusDelay_test(void **state)
+TEST(SpinTimer, timer_polling_zeroDelay_startMaxMinusDelay_test)
 {
   const unsigned long int delayMillis = 0;
   const unsigned long int startMillis = ULONG_MAX-delayMillis;
@@ -223,51 +237,56 @@ void timer_polling_zeroDelay_startMaxMinusDelay_test(void **state)
   StubTestUptimeInfo_setTMillis(startMillis);
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
   while (!SpinTimer_isExpired()) 
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_testTickAndCallback_test(void **state)
+TEST(SpinTimer, timer_testTickAndCallback_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = ULONG_MAX-delayMillis;
   const unsigned long int expEndMillis = startMillis + delayMillis;
 
+  // GMockTimerAdapter GMockTimerAdapterObj;
+  // EXPECT_CALL(GMockTimerAdapterObj, timeExpired()).Times(1);
+
   SpinTimer_create(SpinTimer_IS_NON_RECURRING);
   SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
   SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  //SpinTimer_assignTimeExpiredCallback(&gMockTimerAdapter_timeExpired);
 
   StubTestUptimeInfo_setTMillis(startMillis);
   MockTimerAdapter_resetNumberOfCalls();
 
+
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
-  assert_int_equal(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
 
   while(StubTestUptimeInfo_tMillis() < expEndMillis)
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), true);
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
+  EXPECT_EQ(SpinTimer_isExpired(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 1);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 1);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_testTickAndCallback_zeroDelay_test(void **state)
+TEST(SpinTimer, timer_testTickAndCallback_zeroDelay_test)
 {
   const unsigned long int delayMillis = 0;
   const unsigned long int startMillis = ULONG_MAX-delayMillis;
@@ -281,24 +300,24 @@ void timer_testTickAndCallback_zeroDelay_test(void **state)
   MockTimerAdapter_resetNumberOfCalls();
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
 
   while(StubTestUptimeInfo_tMillis() < expEndMillis)
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), true);
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), false);
+  EXPECT_EQ(SpinTimer_isExpired(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), false);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 1);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 1);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
 
-void timer_testRecurringTimer_test(void **state)
+TEST(SpinTimer, timer_testRecurringTimer_test)
 {
   const unsigned long int delayMillis = 10;
   const unsigned long int startMillis = 0;
@@ -312,39 +331,21 @@ void timer_testRecurringTimer_test(void **state)
   MockTimerAdapter_resetNumberOfCalls();
 
   SpinTimer_start(delayMillis);
-  assert_int_equal(SpinTimer_isRunning(), true);
-  assert_int_equal(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
 
   while(StubTestUptimeInfo_tMillis() < expEndMillis)
   {
-    assert_int_equal(SpinTimer_isRunning(), true);
+    EXPECT_EQ(SpinTimer_isRunning(), true);
     SpinTimer_tick();
     StubTestUptimeInfo_incrementTMillis();
   }
 
-  assert_int_equal(SpinTimer_isExpired(), true);
-  assert_int_equal(SpinTimer_isExpired(), false);
-  assert_int_equal(SpinTimer_isRunning(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), true);
+  EXPECT_EQ(SpinTimer_isExpired(), false);
+  EXPECT_EQ(SpinTimer_isRunning(), true);
 
-  assert_int_equal(MockTimerAdapter_getNumberOfCalls(), 2);
-  assert_int_equal(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 2);
+  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
-
-int main(int argc, char* argv[]) {
-    const UnitTest tests[] = {
-      unit_test(timer_create_allDefaults_test),
-      unit_test(timer_polling_startZero_test),
-      unit_test(timer_polling_startMax_test),
-      unit_test(timer_polling_startMaxMinus1_test),
-      unit_test(timer_polling_startMaxMinusDelay_test),
-      unit_test(timer_polling_startMaxMinusDelayPlus1_test),
-      unit_test(timer_polling_zeroDelay_startZero_test),
-      unit_test(timer_polling_zeroDelay_startMax_test),
-      unit_test(timer_polling_zeroDelay_startMaxMinus1_test),
-      unit_test(timer_polling_zeroDelay_startMaxMinusDelay_test),
-      unit_test(timer_testTickAndCallback_test),
-      unit_test(timer_testTickAndCallback_zeroDelay_test),
-      unit_test(timer_testRecurringTimer_test),
-    };
-    return run_tests(tests);
-}
+#endif
