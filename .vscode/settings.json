@@ -28,5 +28,9 @@
         "random": "c",
         "limits": "c",
         "semaphore": "c"
-    }
+    },
+    "gtest-adapter.debugConfig": [
+        "(gdb) Launch Test Debug"
+    ],
+    "gtest-adapter.supportLocation": true
 }

@@ -34,6 +34,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.mode = mode;
     me->attr.isRunning = false;
     me->attr.isExpiredFlag = false;
+    me->attr.willOverflow = false;
     me->attr.delayMicros = 0;
     me->attr.currentTimeMicros = 0;
     me->attr.triggerTimeMicros = 0;
@@ -153,7 +154,8 @@ static void SpinTimer_startInterval(SpinTimer* me)
     if (0 != SpinTimerUptimeInfo_instance())
     {
         uint32_t timeUntilOverflow = me->attr.maxUptimeValue - me->attr.currentTimeMicros;
-        if (timeUntilOverflow < me->attr.delayMicros)
+        me->attr.willOverflow = timeUntilOverflow < me->attr.delayMicros;
+        if (me->attr.willOverflow)
         {
             // overflow will occur
             me->attr.triggerTimeMicros = me->attr.delayMicros - timeUntilOverflow - 1 * me->attr.microsPerTick;
@@ -173,11 +175,19 @@ static void SpinTimer_internalTick(SpinTimer* me)
         if (0 != SpinTimerUptimeInfo_instance())
         {
             // uptime info object is ready, get current time count
-            me->attr.currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());
-
-            // check if interval is over
-            if (me->attr.triggerTimeMicros <= me->attr.currentTimeMicros)
+            uint32_t currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());
+            if (me->attr.willOverflow)
             {
+                if (currentTimeMicros < me->attr.currentTimeMicros)
+                {
+                    me->attr.willOverflow = false;
+                }
+            }
+            me->attr.currentTimeMicros = currentTimeMicros;
+
+            if ((!me->attr.willOverflow) && (me->attr.triggerTimeMicros <= me->attr.currentTimeMicros))
+            {
+                // check if interval is over
                 me->notifyExpired(me);
             }
         }

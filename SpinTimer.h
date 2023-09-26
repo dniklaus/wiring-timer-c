@@ -18,6 +18,7 @@ typedef struct SpinTimerAttributes
     SpinTimerMode mode;
     bool isRunning;
     bool isExpiredFlag;
+    bool willOverflow;
     uint32_t delayMicros;
     uint32_t currentTimeMicros;
     uint32_t triggerTimeMicros;
