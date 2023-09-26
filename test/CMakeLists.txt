@@ -37,11 +37,15 @@ add_subdirectory(../  ${CMAKE_CURRENT_BINARY_DIR}/spintimer)
 
 # Set names of needed build components
 set(TARGET ${PROJECT})
-set(SOURCES 
-  MockTimerAdapter.c
-  StubTestUptimeInfo.c
+set(SOURCES
+  MockTimerAction.c
+  StubSpinTimersUptimeInfoAdapter.c
   test.cpp
 )
+
+include_directories(googletest/include)
+include(GoogleTest)
+
 set(INCLUDE_DIRECTORIES 
   "."
 )

@@ -22,6 +22,7 @@ struct SpinTimerUptimeInfoAdapter
     SpinTimerUptimeInfoAdapterVtable const* vptr;   /* SpinTimerUptimeInfoAdapter's pointer to immutable virtual function table */
     uint32_t (*currentTimeMicros)(SpinTimerUptimeInfoAdapter const* const me);  /* interface function currentTimeMicros() (pure virtual) */
     uint32_t (*maxTimeValue)(SpinTimerUptimeInfoAdapter const* const me);       /* interface function maxTimeValue() (pure virtual) */
+    uint32_t (*microsPerTick)(SpinTimerUptimeInfoAdapter const* const me);      /* interface function microsPerTick() (pure virtual) */
 };
 
 /* SpinTimerUptimeInfoAdapter's virtual function table */
@@ -29,6 +30,7 @@ struct SpinTimerUptimeInfoAdapterVtable
 {
     uint32_t (*currentTimeMicros)(SpinTimerUptimeInfoAdapter const* const me);  /* pointer to virtual function currentTimeMicros() */
     uint32_t (*maxTimeValue)(SpinTimerUptimeInfoAdapter const* const me);       /* pointer to virtual function maxTimeValue() */
+    uint32_t (*microsPerTick)(SpinTimerUptimeInfoAdapter const* const me);      /* pointer to virtual function microsPerTick() */
 };
 
 /* Function prototypes */
@@ -44,5 +46,11 @@ static inline uint32_t SpinTimerUptimeInfoAdapter_maxTimeValue_vcall(SpinTimerUp
 {
     return (*me->vptr->maxTimeValue)(me); /* late binding: calls the function in the current virtual table */
 }
+
+static inline uint32_t SpinTimerUptimeInfoAdapter_microsPerTick_vcall(SpinTimerUptimeInfoAdapter const* const me)
+{
+    return (*me->vptr->microsPerTick)(me); /* late binding: calls the function in the current virtual table */
+}
+
 
 #endif

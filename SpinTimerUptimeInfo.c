@@ -36,6 +36,7 @@ void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me)
     me->setAdapter = &SpinTimerUptimeInfo_setAdapter;
     me->currentTimeMicros = &SpinTimerUptimeInfo_currentTimeMicros;
     me->maxTimeValue = &SpinTimerUptimeInfo_maxTimeValue;
+    me->microsPerTick = &SpinTimerUptimeInfo_microsPerTick;
 }
 
 void SpinTimerUptimeInfo_destroy(SpinTimerUptimeInfo* me)

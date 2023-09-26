@@ -31,6 +31,7 @@ struct SpinTimerUptimeInfo
     void (*setAdapter)(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
     uint32_t (*currentTimeMicros)(SpinTimerUptimeInfo const* const me);
     uint32_t (*maxTimeValue)(SpinTimerUptimeInfo const* const me);
+    uint32_t (*microsPerTick)(SpinTimerUptimeInfo const* const me);
 };
 
 SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance();
@@ -58,6 +59,16 @@ static inline uint32_t SpinTimerUptimeInfo_maxTimeValue(SpinTimerUptimeInfo cons
         max = me->attr.adapter->maxTimeValue(me->attr.adapter);
     }
     return max;
+}
+
+static inline uint32_t SpinTimerUptimeInfo_microsPerTick(SpinTimerUptimeInfo const* const me)
+{
+    uint32_t tickMicros = 0;
+    if (0 != me->attr.adapter)
+    {
+        tickMicros = me->attr.adapter->microsPerTick(me->attr.adapter);
+    }
+    return tickMicros;
 }
 
 void SpinTimerUptimeInfo_setAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
