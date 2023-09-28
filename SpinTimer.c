@@ -187,7 +187,7 @@ static void SpinTimer_internalTick(SpinTimer* me)
 
             if ((!me->attr.willOverflow) && (me->attr.triggerTimeMicros <= me->attr.currentTimeMicros))
             {
-                // check if interval is over
+                // interval is over
                 me->notifyExpired(me);
             }
         }
