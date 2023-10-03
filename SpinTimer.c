@@ -133,8 +133,8 @@ void SpinTimer_notifyExpired(SpinTimer* me)
 {
     if (0 != me)
     {
-	    me->attr.currentTimeMicros = me->attr.triggerTimeMicros;    // interval end might become the new interval beginning
         // interval is over
+	    me->attr.currentTimeMicros = me->attr.triggerTimeMicros;    // interval end might become the new interval beginning
         if (me->attr.mode == SpinTimerMode_continuous)
         {
             // start next interval
