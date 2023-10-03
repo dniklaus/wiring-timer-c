@@ -38,8 +38,8 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.delayMicros = 0;
     me->attr.currentTimeMicros = 0;
     me->attr.triggerTimeMicros = 0;
-    me->attr.maxUptimeValue = 0;
-    me->attr.microsPerTick = 0;
+    me->attr.maxUptimeValue = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
+    me->attr.microsPerTick = SpinTimerUptimeInfo_instance()->microsPerTick(SpinTimerUptimeInfo_instance());
     me->attr.action = 0;
     me->attr.next = 0;
 
@@ -75,11 +75,10 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
     me->attr.isRunning = true;
     me->attr.delayMicros = timeMicros;
     
-    if (0 != SpinTimerUptimeInfo_instance())
+    SpinTimerUptimeInfo* uptimeInfo = SpinTimerUptimeInfo_instance();
+    if (0 != uptimeInfo)
     {
-        me->attr.currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());
-        me->attr.maxUptimeValue = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
-        me->attr.microsPerTick = SpinTimerUptimeInfo_instance()->microsPerTick(SpinTimerUptimeInfo_instance());
+        me->attr.currentTimeMicros = uptimeInfo->currentTimeMicros(uptimeInfo);
         if (timeMicros > me->attr.maxUptimeValue)
         {
             // limit time value to the max
@@ -151,20 +150,17 @@ SpinTimerAction* SpinTimer_action(SpinTimer* me)
 
 static void SpinTimer_startInterval(SpinTimer* me)
 {
-    if (0 != SpinTimerUptimeInfo_instance())
+    uint32_t timeUntilOverflow = me->attr.maxUptimeValue - me->attr.currentTimeMicros;
+    me->attr.willOverflow = timeUntilOverflow < me->attr.delayMicros;
+    if (me->attr.willOverflow)
     {
-        uint32_t timeUntilOverflow = me->attr.maxUptimeValue - me->attr.currentTimeMicros;
-        me->attr.willOverflow = timeUntilOverflow < me->attr.delayMicros;
-        if (me->attr.willOverflow)
-        {
-            // overflow will occur
-            me->attr.triggerTimeMicros = me->attr.delayMicros - timeUntilOverflow - 1 * me->attr.microsPerTick;
-        }
-        else
-        {
-            me->attr.triggerTimeMicros = me->attr.currentTimeMicros + me->attr.delayMicros;
-        }        
+        // overflow will occur
+        me->attr.triggerTimeMicros = me->attr.delayMicros - timeUntilOverflow - me->attr.microsPerTick;
     }
+    else
+    {
+        me->attr.triggerTimeMicros = me->attr.currentTimeMicros + me->attr.delayMicros;
+    }        
 }
 
 static void SpinTimer_internalTick(SpinTimer* me)

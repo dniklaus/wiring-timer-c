@@ -91,15 +91,15 @@ void SpinTimerContext_detach(SpinTimerContext* me, SpinTimer* timer)
             next->setNext(next, timer->next(next));
         }
     }
-  }
+}
 
 void SpinTimerContext_handleTick(SpinTimerContext* me)
 {
-  SpinTimer* timer = me->attr.timer;
-  while (timer != 0)
-  {
-    timer->tick(timer);
-    timer = timer->next(timer);
-  }
+    SpinTimer* timer = me->attr.timer;
+    while (timer != 0)
+    {
+        timer->tick(timer); 
+        timer = timer->next(timer);
+    }
 }
 
