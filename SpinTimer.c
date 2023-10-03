@@ -35,6 +35,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.isRunning = false;
     me->attr.isExpiredFlag = false;
     me->attr.willOverflow = false;
+    me->attr.syncNextStartOnLastExpiry = false;
     me->attr.delayMicros = 0;
     me->attr.currentTimeMicros = 0;
     me->attr.triggerTimeMicros = 0;
@@ -46,8 +47,10 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->getMode = &SpinTimer_getMode;
     me->start = &SpinTimer_start;
     me->cancel = &SpinTimer_cancel;
+    me->setSyncNextStartOnLastExpiry = &SpinTimer_setSyncNextStartOnLastExpiry;
     me->isRunning = &SpinTimer_isRunning;
     me->isExpired = &SpinTimer_isExpired;
+    me->doesNextStartSyncOnLastExpiry = &SpinTimer_doesNextStartSyncOnLastExpiry;
     me->tick = &SpinTimer_tick;
     me->notifyExpired = &SpinTimer_notifyExpired;
     me->assignAction = &SpinTimer_assignAction;
@@ -78,7 +81,10 @@ void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)
     SpinTimerUptimeInfo* uptimeInfo = SpinTimerUptimeInfo_instance();
     if (0 != uptimeInfo)
     {
-        me->attr.currentTimeMicros = uptimeInfo->currentTimeMicros(uptimeInfo);
+        if (!me->attr.syncNextStartOnLastExpiry)
+        {
+            me->attr.currentTimeMicros = uptimeInfo->currentTimeMicros(uptimeInfo);
+        }
         if (timeMicros > me->attr.maxUptimeValue)
         {
             // limit time value to the max
@@ -95,6 +101,11 @@ void SpinTimer_cancel(SpinTimer* me)
     me->attr.isExpiredFlag = false;
 }
 
+void SpinTimer_setSyncNextStartOnLastExpiry(SpinTimer* me, bool syncNextStartOnLastExpiry)
+{
+    me->attr.syncNextStartOnLastExpiry = syncNextStartOnLastExpiry;
+}
+
 bool SpinTimer_isRunning(SpinTimer* me)
 {
     return me->attr.isRunning;
@@ -108,6 +119,11 @@ bool SpinTimer_isExpired(SpinTimer* me)
     return isExpired;
 }
 
+bool SpinTimer_doesNextStartSyncOnLastExpiry(SpinTimer const* const me)
+{
+    return me->attr.syncNextStartOnLastExpiry;    
+}
+
 void SpinTimer_tick(SpinTimer* me)
 {
     SpinTimer_internalTick(me);
@@ -117,11 +133,11 @@ void SpinTimer_notifyExpired(SpinTimer* me)
 {
     if (0 != me)
     {
+	    me->attr.currentTimeMicros = me->attr.triggerTimeMicros;    // interval end might become the new interval beginning
         // interval is over
         if (me->attr.mode == SpinTimerMode_continuous)
         {
             // start next interval
-            me->attr.currentTimeMicros = me->attr.triggerTimeMicros;    // interval end becomes the new interval beginning
             SpinTimer_startInterval(me);
         }
         else
