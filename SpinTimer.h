@@ -2,21 +2,77 @@
 #define __Timer_H
 
 #include <stdbool.h>
-#include "SpinTimerAdapter.h"
-#include "UptimeInfo.h"
+#include <stdint.h>
 
-extern const bool SpinTimer_IS_NON_RECURRING;
-extern const bool SpinTimer_IS_RECURRING;
+typedef enum SpinTimerMode
+{
+    SpinTimerMode_oneShot = 0,
+    SpinTimerMode_continuous = 1
+} SpinTimerMode;
+    
+typedef struct SpinTimerAction SpinTimerAction;
+typedef struct SpinTimer SpinTimer;
 
-void SpinTimer_create(bool isRecurring);
-void SpinTimer_destroy();
+typedef struct SpinTimerAttributes
+{
+    SpinTimerMode mode;
+    bool isRunning;
+    bool isExpiredFlag;
+    bool willOverflow;
+    bool syncNextStartOnLastExpiry;
+    uint32_t delayMicros;
+    uint32_t currentTimeMicros;
+    uint32_t triggerTimeMicros;
+    uint32_t maxUptimeValue;
+    uint32_t microsPerTick;
+    SpinTimerAction* action;
+    SpinTimer* next;
+} SpinTimerAttributes;
 
-void SpinTimer_start(unsigned long timeMillis);
-void SpinTimer_cancel();
-bool SpinTimer_isRunning();
-bool SpinTimer_isExpired();
-void SpinTimer_tick();
-void SpinTimer_assignTimeExpiredCallback(void (*timeExpired)());
-void SpinTimer_assignUptimeInfoCallout(unsigned long (*tMillis)());
+struct SpinTimer
+{
+    SpinTimerAttributes attr;
+    SpinTimerMode (*getMode)(SpinTimer* me);
+    void (*start)(SpinTimer* me, uint32_t timeMicros);
+    void (*cancel)(SpinTimer* me);
+    void (*setSyncNextStartOnLastExpiry)(SpinTimer* me, bool syncNextStartOnLastExpiry);
+    bool (*isRunning)(SpinTimer* me);
+    bool (*isExpired)(SpinTimer* me);
+    bool (*doesNextStartSyncOnLastExpiry)(SpinTimer const* const me);
+    void (*tick)(SpinTimer* me);
+    void (*notifyExpired)(SpinTimer* me);
+    void (*assignAction)(SpinTimer* me, SpinTimerAction* action);
+    SpinTimerAction* (*action)(SpinTimer* me);
+    SpinTimer* (*next)(SpinTimer* me);
+    void (*setNext)(SpinTimer* me, SpinTimer* next);
+};
+
+SpinTimer* SpinTimer_create(SpinTimerMode mode);
+void SpinTimer_init(SpinTimer* me, SpinTimerMode mode);
+void SpinTimer_destroy(SpinTimer* me);
+
+SpinTimerMode SpinTimer_getMode(SpinTimer* me);
+void SpinTimer_start(SpinTimer* me, uint32_t timeMicros);
+void SpinTimer_cancel(SpinTimer* me);
+void SpinTimer_setSyncNextStartOnLastExpiry(SpinTimer* me, bool syncNextStartOnLastExpiry);
+bool SpinTimer_isRunning(SpinTimer* me);
+bool SpinTimer_isExpired(SpinTimer* me);
+bool SpinTimer_doesNextStartSyncOnLastExpiry(SpinTimer const* const me);
+void SpinTimer_tick(SpinTimer* me);
+void SpinTimer_notifyExpired(SpinTimer* me);
+void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action);
+SpinTimerAction* SpinTimer_action(SpinTimer* me);
+
+/**
+ * Get next SpinTimer object pointer out of the linked list containing timers.
+ * @return SpinTimer object pointer or 0 if current object is the trailing list element.
+ */
+SpinTimer* SpinTimer_next(SpinTimer* me);
+
+/**
+ * Set next SpinTimer object of the linked list containing timers.
+ * @param timer SpinTimer object pointer to be set as the next element of the list.
+ */
+void SpinTimer_setNext(SpinTimer* me, SpinTimer* next);
 
 #endif

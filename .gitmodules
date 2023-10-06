@@ -1,9 +1,0 @@
-[submodule "test/test-cmockery/cmockery"]
-	path = test/test-cmockery/cmockery
-	url = git@github.com:google/cmockery.git
-[submodule "test/test-cmocka/cmocka"]
-	path = test/test-cmocka/cmocka
-	url = git@gitlab.com:cmocka/cmocka.git
-[submodule "test/test-gtest/gtest"]
-	path = test/test-gtest/gtest
-	url = git@github.com:google/googletest.git
