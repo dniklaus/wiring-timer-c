@@ -6,17 +6,31 @@
 #include "SpinTimer.h"
 
 //-----------------------------------------------------------------------------
-// Declaration of private 
+// Declaration of private functions
 //-----------------------------------------------------------------------------
 /**
- * @brief Start the (new) interval (private local function)
+ * @brief Start the (new) interval
+ * @details Starts time interval measurement, calculates the expiration trigger time. 
+ * Manages to avoid unsigned long int overflow issues occurring around every 50 hours. 
+ * Called by SpinTimer_start() and by SpinTimer_notifyExpired(). Private local function.
+ * @param me Pointer to this SpinTimer object.
  */
 static void SpinTimer_startInterval(SpinTimer* me);
 
 /**
  * @brief Internal tick method, evaluates the expired state.
+ * @details Called by SpinTimer_isExpired() and by SpinTimer_tick(). Private local function.
+ * @param me Pointer to this SpinTimer object.
  */
 static void SpinTimer_internalTick(SpinTimer* me);
+
+/**
+ * @brief Notify interval is over.
+ * @details Called by SpinTimer_internalTick(). Private local function.
+ * @param me Pointer to this SpinTimer object. 
+ */
+static void SpinTimer_notifyExpired(SpinTimer* me);
+
 
 //-----------------------------------------------------------------------------
 // Implementation
@@ -37,7 +51,7 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->attr.willOverflow = false;
     me->attr.syncNextStartOnLastExpiry = false;
     me->attr.delayMicros = 0;
-    me->attr.currentTimeMicros = 0;
+    me->attr.currentTimeMicros = SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance());;
     me->attr.triggerTimeMicros = 0;
     me->attr.maxUptimeValue = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
     me->attr.microsPerTick = SpinTimerUptimeInfo_instance()->microsPerTick(SpinTimerUptimeInfo_instance());
@@ -52,7 +66,6 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
     me->isExpired = &SpinTimer_isExpired;
     me->doesNextStartSyncOnLastExpiry = &SpinTimer_doesNextStartSyncOnLastExpiry;
     me->tick = &SpinTimer_tick;
-    me->notifyExpired = &SpinTimer_notifyExpired;
     me->assignAction = &SpinTimer_assignAction;
     me->action = &SpinTimer_action;
     me->next = &SpinTimer_next;
@@ -200,7 +213,7 @@ static void SpinTimer_internalTick(SpinTimer* me)
             if ((!me->attr.willOverflow) && (me->attr.triggerTimeMicros <= me->attr.currentTimeMicros))
             {
                 // interval is over
-                me->notifyExpired(me);
+                SpinTimer_notifyExpired(me);
             }
         }
     }
