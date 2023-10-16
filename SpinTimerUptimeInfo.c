@@ -33,20 +33,26 @@ SpinTimerUptimeInfo* SpinTimerUptimeInfo_create()
 void SpinTimerUptimeInfo_init(SpinTimerUptimeInfo* me)
 {
     me->attr.adapter = 0;
-    me->setAdapter = &SpinTimerUptimeInfo_setAdapter;
+    me->assignAdapter = &SpinTimerUptimeInfo_assignAdapter;
+    me->adapter = &SpinTimerUptimeInfo_adapter;
     me->currentTimeMicros = &SpinTimerUptimeInfo_currentTimeMicros;
     me->maxTimeValue = &SpinTimerUptimeInfo_maxTimeValue;
     me->microsPerTick = &SpinTimerUptimeInfo_microsPerTick;
 }
 
-void SpinTimerUptimeInfo_destroy(SpinTimerUptimeInfo* me)
+void SpinTimerUptimeInfo_destroy()
 {
+    SpinTimerUptimeInfo* me = SpinTimerUptimeInfo_instance();
     s_spinTimerUptimeInfo = 0;
     free(me);
 }
 
-void SpinTimerUptimeInfo_setAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter)
+void SpinTimerUptimeInfo_assignAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter)
 {
     me->attr.adapter = adapter;
 }
 
+SpinTimerUptimeInfoAdapter* SpinTimerUptimeInfo_adapter(SpinTimerUptimeInfo* me)
+{
+    return me->attr.adapter;
+}

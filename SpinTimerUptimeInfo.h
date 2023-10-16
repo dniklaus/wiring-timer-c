@@ -28,14 +28,15 @@ typedef struct SpinTimerUptimeInfoAttr
 struct SpinTimerUptimeInfo
 {
     SpinTimerUptimeInfoAttr attr;
-    void (*setAdapter)(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
+    void (*assignAdapter)(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
+    SpinTimerUptimeInfoAdapter* (*adapter)(SpinTimerUptimeInfo* me);
     uint32_t (*currentTimeMicros)(SpinTimerUptimeInfo const* const me);
     uint32_t (*maxTimeValue)(SpinTimerUptimeInfo const* const me);
     uint32_t (*microsPerTick)(SpinTimerUptimeInfo const* const me);
 };
 
 SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance();
-void SpinTimerUptimeInfo_destroy(SpinTimerUptimeInfo* me);
+void SpinTimerUptimeInfo_destroy();
 
 /**
  * @brief Get current uptime in microseconds.
@@ -71,6 +72,8 @@ static inline uint32_t SpinTimerUptimeInfo_microsPerTick(SpinTimerUptimeInfo con
     return tickMicros;
 }
 
-void SpinTimerUptimeInfo_setAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
+void SpinTimerUptimeInfo_assignAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter);
+
+SpinTimerUptimeInfoAdapter* SpinTimerUptimeInfo_adapter(SpinTimerUptimeInfo* me);
 
 #endif
