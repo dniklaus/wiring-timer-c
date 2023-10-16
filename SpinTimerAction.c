@@ -2,6 +2,11 @@
 #include "SpinTimerAction.h"
 
 /* pure virtual functions: fwd. decl. */
+/**
+ * @brief 
+ * @details Pure virtual function. Implementation of this will be called on the SpinTimer object's expiry when injected.
+ * @param me 
+ */
 static void SpinTimerAction_timeExpired(SpinTimerAction const * const me);
 
 SpinTimerAction* SpinTimerAction_create()

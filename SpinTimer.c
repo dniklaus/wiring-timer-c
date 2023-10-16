@@ -76,9 +76,15 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)
 
 void SpinTimer_destroy(SpinTimer* me)
 {
-    me->attr.action = 0;
-    SpinTimerContext_instance()->detach(SpinTimerContext_instance(), me);
+    SpinTimer_finalize(me);
     free(me);
+}
+
+void SpinTimer_finalize(SpinTimer* me)
+{
+    SpinTimerContext_instance()->detach(SpinTimerContext_instance(), me);
+    me->attr.action = 0;
+    me->attr.next = 0;
 }
 
 SpinTimerMode SpinTimer_getMode(SpinTimer* me)

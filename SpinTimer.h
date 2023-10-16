@@ -48,15 +48,15 @@ struct SpinTimer
 
 /**
  * @brief Constructor.
- * @details Allocates memory for a SpinTimer object on the heap.
+ * @details Allocates memory for a SpinTimer object on the heap and attaches itself to the list of timer objects held by SpinTimerContext.
  * @param mode Operation mode {SpinTimerMode_oneShot|SpinTimerMode_continuous}
  * @return SpinTimer* Pointer to the created SpinTimer object.
  */
 SpinTimer* SpinTimer_create(SpinTimerMode mode);
 
 /**
- * @brief Initialization.
- * @details Initializes the SpinTimer object. To be called on SpinTimer objects created on stack. Called by the constructor too.
+ * @brief Initializer.
+ * @details Initializes the SpinTimer object and attaches itself to the list of timer objects held by SpinTimerContext. To be called on SpinTimer objects created on stack. Called by the constructor too.
  * @param me Pointer to this SpinTimer object.
  * @param mode Operation mode {SpinTimerMode_oneShot|SpinTimerMode_continuous}
  */
@@ -64,10 +64,17 @@ void SpinTimer_init(SpinTimer* me, SpinTimerMode mode);
 
 /**
  * @brief Destructor.
- * @details To be called on SpinTimer objects having been created by the constructor (if not used anymore). Never call this on SpinTimer objects on the stack.
+ * @details Detaches this object from the list of timer objects held by SpinTimerContext. Deallocates memory assigned for this object. To be called on SpinTimer objects having been created by the constructor (if not used anymore). Never call this on SpinTimer objects created on the stack.
  * @param me Pointer to this SpinTimer object.
  */
 void SpinTimer_destroy(SpinTimer* me);
+
+/**
+ * @brief Finalizer.
+ * @details Detaches this object from the list of timer objects held by SpinTimerContext. To be called on SpinTimer objects created on stack (if not used anymore). Called by the destructor too.
+ * @param me Pointer to this SpinTimer object.
+ */
+void SpinTimer_finalize(SpinTimer* me);
 
 /**
  * @brief Mode get accessor.
@@ -101,6 +108,15 @@ void SpinTimer_cancel(SpinTimer* me);
 void SpinTimer_setSyncNextStartOnLastExpiry(SpinTimer* me, bool syncNextStartOnLastExpiry);
 
 /**
+ * @brief Sync mode get accessor.
+ * @details Get the sync mode.
+ * @param me Pointer to this SpinTimer object.
+ * @return true The interval start will be aligned to the last expiry time when the timer gets started.
+ * @return false The interval starts independantly at the current time when the timer gets started.
+ */
+bool SpinTimer_doesNextStartSyncOnLastExpiry(SpinTimer const* const me);
+
+/**
  * @brief Run status get accessor.
  * @details Indicates whether the timer is currently running.
  * @param me Pointer to this SpinTimer object.
@@ -122,15 +138,6 @@ bool SpinTimer_isRunning(SpinTimer* me);
  * @return false The timer hasn't expired since last call of this function.
  */
 bool SpinTimer_isExpired(SpinTimer* me);
-
-/**
- * @brief Sync mode get accessor.
- * @details Get the sync mode.
- * @param me Pointer to this SpinTimer object.
- * @return true The interval start will be aligned to the last expiry time when the timer gets started.
- * @return false The interval starts independantly at the current time when the timer gets started.
- */
-bool SpinTimer_doesNextStartSyncOnLastExpiry(SpinTimer const* const me);
 
 /**
  * @brief Poll function that kicks the Timer.

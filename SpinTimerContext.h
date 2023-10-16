@@ -21,15 +21,18 @@ typedef struct SpinTimerContextAttr
  *
  * Features:
  * - is like a very simple scheduler.
- * - has to be kicked (by calling scheduleTimers() or SpinTimerContext_handleTick()) as often as possible and/or on regular intervals,
+ * - has to be kicked (by calling SpinTimerContext_handleTick()) as often as possible and/or on regular intervals,
  *   i.e. in the bare metal main loop() function:
  *
+ *       #include "SpinTimerContext.h"
  *       #include "SpinTimer.h"
+ * 
+ *       // .. init stuff
  *
  *       while (1)
  *       {
  *           // Kick the timer(s)
- *           scheduleTimers();
+ *           SpinTimerContext_instance()->handleTick(SpinTimerContext_instance());
  *
  *           // .. do something
  *       }

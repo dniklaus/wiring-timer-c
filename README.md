@@ -1,160 +1,271 @@
-wiring-timer-c
-===================
+lib.emb.spintimer
+=================
 
-Universal Timer with 1 millisecond resolution, originally based on Arduino millis() function, C implementation (single instance only).
+Universal Timer with 1 millisecond resolution, running on system tick (or other clock sources).
 
 
 # Features
 
-* configurable to be either recurring (timer automatically restarts after the interval) or non-recurring (timer stops after timeout period is over)
+* implementation based on OOP principles
+* configurable to be either running in continuous mode (timer automatically restarts after each interval) or in one-shot mode (timer stops after timeout period is over)
 * timer interval/timeout time configurable
-* originally based on Arduino millis() function (number of milliseconds since the Arduino board began running the current program), the source of the uptime info [ms] can be overridden by injecting a platform specific implementation when working with other frameworks than with Arduino
-* handles unsigned long int overflows correctly
+* the source of the uptime info [us] can be overridden by injecting a design specific implementation that counts system ticks or other clock info
+* handles uptime counter overflows correctly
 
 
 # Integration
 
-Here the integration of a Timer is shown with a simple Arduino Sketch toggling the Arduino board's built-in LED (blink):
-
-* include the library
-
-  ```C
-  #include <SpinTimer.h>
-  ```
-
-* timer interval constant definition
-
-  ```C
-  const unsigned int BLINK_TIME_MILLIS = 200;
-  ```
-
-* specific `SpinTimerAdapter` implementation, periodically toggling the Arduino built-in LED
-
-  ```C
-  void BlinkTimerAdapter_timeExpired()
-  {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-  }
-  ```
-
-* setup: set LED pin to output; create recurring Timer, inject specific TimerAdapter
-
-  ```C
-  // The setup function is called once at startup of the sketch
-  void setup()
-  {
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    SpinTimer_create(SpinTimer_IS_RECURRING);
-    SpinTimer_assignTimeExpiredCallback(&BlinkTimerAdapter_timeExpired);
-    SpinTimer_start(BLINK_TIME_MILLIS);
-  }
-  ```
-
-* loop: call `SpinTimer_tick()` function
-
-  ```C
-  // The loop function is called in an endless loop
-  void loop()
-  {
-    SpinTimer_tick();
-  }
-  ```
-
-## Platform specific Uptime Info Adapter injection
-
-When using the Timer library with an Arduino Framework environment the uptime milliseconds counter info default implementation is automatically engaged and nothing has to be done.
-
-If you are using other environments (i.e. when running in an STM32Cube system), a specific `UptimeInfoAdapter` implementation has to be used and injected. The following example shows the specific `STM32UptimeInfoAdapter`implementation of `UptimeInfoAdapter`as to be found in the Examples folder:
+Here the integration of a SpinTimer is shown with a simple embedded application FW toggling a board's built-in LED (blink):
 
 ```C
-/*
- * STM32UptimeInfoAdapter.h
- */
+#include <stdint.h>
+#include "SpinTimer.h"
+#include "HearBeatTimerAction.h"
 
-#ifndef STM32UPTIMEINFOADAPTER_H_
-#define STM32UPTIMEINFOADAPTER_H_
-
-#include "stm32l4xx_hal.h"
-#include "UptimeInfo.h"
-
-unsigned long STM32UptimeInfoAdapter_tMillis()
-{
-  unsigned long ms = HAL_GetTick();
-  return ms;
-}
-
-#endif /* STM32UPTIMEINFOADAPTER_H_ */
-
-```
-
-Here is how the `STM32UptimeInfoAdapter` implementation is injected into the `SpinTimer` instance:
-
-```C
-// ..
-#include "STM32UptimeInfoAdapter.h"
+// timer interval constant definition
+const uint32_t heartBeatTimeMicros = 200000;  /// [us]
 
 int main(void)
 {
-  HAL_Init();
-  SystemClock_Config();
-  
-  // ..
+  // SpinTimer Uptime Info (10us tick)
+  SpinTimerUptimeInfo* spinTimerUptimeInfo = SpinTimerUptimeInfo_instance();
+  spinTimerUptimeInfo->assignAdapter(spinTimerUptimeInfo, (SpinTimerUptimeInfoAdapter*)SpinTimerSysTickUptimeInfoAdapter_create());
+      
+  // SpinTimer HeartBeat LED
+  SpinTimer* heartBeatTimer = SpinTimer_create(SpinTimerMode_continuous);
+  heartBeatTimer->assignAction(heartBeatTimer, (SpinTimerAction*)HeartBeatTimerAction_create());
+  heartBeatTimer->start(heartBeatTimer, heartBeatTimeMicros);
 
-  SpinTimer_assignUptimeInfoCallout(&STM32UptimeInfoAdapter_tMillis);
-
-  // ..
-    
-  while (1)
+  while(true)
   {
-    SpinTimer_tick();
-  }    
+    SpinTimerContext_instance()->handleTick(SpinTimerContext_instance());
+  }
+
+  return 1;
 }
 ```
 
+
 # API
 
-This section describes the Timer library Application Programming Interface.
+This section describes the SpinTimer library Application Programming Interface.
 ## SpinTimer
-* *Constructor*: `SpinTimer_create(bool isRecurring)`
-  * Parameter `isRecurring`: Operation mode, true: recurring, false: non-recurring
-* Assign specific `timeExpired` callback function, acts as dependency injection. `void SpinTimer_assignTimeExpiredCallback(void (*timeExpired)())`
-  * Parameter `void (*timeExpired)()`: Function Pointer to specific `timeExpired` function implementation
-* Assign specific `tMillis` callout function, acts as dependency injection. `void SpinTimer_assignUptimeInfoCallout(unsigned long (*tMillis)())`
-  * Parameter `unsigned long (*tMillis)()`: Function Pointer to specific `tMillis` function implementation
+* *__Constructor__*: `SpinTimer* SpinTimer_create(SpinTimerMode mode)`
 
-* *Start or restart the timer* with a specific time out or interval time. `void SpinTimer_start(unsigned long timeMillis)`
-   * Parameter `timeMillis`: Time out or interval time to be set for the timer [ms]; 0 will make the timer expire as soon as possible.
-* *Cancel the timer and stop*. `void SpinTimer_cancel()`
-  * No time expired event will be sent out after the specified time would have been elapsed.
-  * Subsequent `SpinTimer_isExpired()` queries will return false.
+  Allocates memory for a SpinTimer object on the heap.
+  * Parameter `mode`: Operation mode
+    * `SpinTimerMode_oneShot` (0): one-shot
+    * `SpinTimerMode_continuous` (1): countinuous
+  * Returns a pointer to the created `SpinTimer` object
 
-* Poll method to *get the timer expired status*, recalculates whether the timer has expired before. `bool SpinTimer_isExpired()`
-  * This method could be used in a pure polling mode, where `SpinTimer_tick()` has not to get called by the `SpinTimer_tick()` function, but also a mixed operation in combination with calling `SpinTimer_tick()` periodically is possible.
-  * Subsequent `isTimerExpired()` queries will return false after the first one returned true, as long as the time did not expire again in case of a recurring timer.
-  * Returns `true` if the timer has expired, `false` otherwise.
+* *__Initializer__*: `void SpinTimer_init(SpinTimer* me, SpinTimerMode mode)`
   
-* Indicates whether the timer is currently *running*. `bool SpinTimer_isRunning()`
-  * Returns `true` if timer is running, `false` otherwise.
+  Initializes the SpinTimer object. To be called on SpinTimer objects created on stack. Called by the constructor too.
 
-* Kick the Timer. `void SpinTimer_tick()`
-   * Recalculates whether the timer has expired.
+  * Parameter `me`: Pointer to this SpinTimer object.
 
-* Constant for `isRecurring` parameter of the constructor to create a one shot timer.
-  `static const bool SpinTimer_IS_NON_RECURRING = false`
+  * Parameter `mode`: Operation mode
+    * `SpinTimerMode_oneShot` (0): one-shot, the timer stops after the interval is over.
+    * `SpinTimerMode_continuous` (1): countinuous, the timer runs continuously interval after interval.
 
-* Constant for `isRecurring` parameter of the constructor to create a recurring timer.
-  `static const bool SpinTimer_IS_RECURRING = true`
+* *__Destructor__*: `void SpinTimer_destroy(SpinTimer* me)`
+  
+  Detaches this object from the list of timer objects held by `SpinTimerContext`. Deallocates memory assigned for this object. 
+  To be called on SpinTimer objects having been created by the constructor (if not used anymore). 
+  Never call this on SpinTimer objects created on the stack!
+  
+  * Parameter `me`: Pointer to this SpinTimer object.
+
+* *__Finalizer__*: `void SpinTimer_finalize(SpinTimer* me)` 
+  
+  Detaches this object from the list of timer objects held by `SpinTimerContext`. 
+  To be called on SpinTimer objects created on stack (if not used anymore). 
+  Called by the destructor too.
+  
+  * Parameter `me`: Pointer to this SpinTimer object.
+
+* *__Mode get accessor__*: `SpinTimerMode SpinTimer_getMode(SpinTimer* me)`
+  
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns the `SpinTimerMode`
+    * `SpinTimerMode_oneShot` (0): one-shot, the timer stops after the interval is over.
+    * `SpinTimerMode_continuous` (1): countinuous, the timer runs continuously interval after interval.
+
+* *__Start the timer__*: `void SpinTimer_start(SpinTimer* me, uint32_t timeMicros)`
+
+  Start or restart the timer with a specific time out or interval time. 
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Parameter `timeMicros`: Time out or interval time to be set for the timer [us]; 0 will make the timer expire as soon as possible.
+
+* *__Cancel the timer and stop__*: `void SpinTimer_cancel(SpinTimer* me)`
+
+  Cancel the timer and stop. No time expired event will be sent out after the specified time would have been elapsed. Subsequent `SpinTimer_isExpired()` queries will return false.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+
+* *__Sync mode set accessor__*: `void SpinTimer_setSyncNextStartOnLastExpiry(SpinTimer* me, bool syncNextStartOnLastExpiry)`
+
+   Set the sync mode.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Parameter `syncNextStartOnLastExpiry`: 
+    * `true`: the beginning of next interval that gets started will be aligned to the last expiry time; 
+    * `false`: the next interval starts independantly at the current time.
+
+* *__Sync mode get accessor__*: `bool SpinTimer_doesNextStartSyncOnLastExpiry(SpinTimer const* const me)`
+
+  Get the sync mode.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns
+    * `true`: The interval start will be aligned to the last expiry time when the timer gets started.
+    * `false`: The interval starts independantly at the current time when the timer gets started.
+
+* *__Run status get accessor__* : `bool SpinTimer_isRunning(SpinTimer* me)`
+  
+  Indicates whether the timer is currently running.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns
+    * `true`: the timer is running.
+    * `false`: the timer isn't running.
+
+* *__Expiry status get accessor (trap) and poll function__*: `bool SpinTimer_isExpired(SpinTimer* me)`
+
+  Poll function to get the timer expire status, recalculates whether the timer has expired before.
+
+  This method could be used in a pure polling mode, where SpinTimer_tick() has not to get called (by the SpinTimerContext_handleTick() method), but also a mixed operation in combination with calling SpinTimer_tick() periodically is possible.
+
+  Subsequent `SpinTimer_isExpired()` queries will return false after the first one returned true, as long as the time did not expire again in case of a continuous timer.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns
+    * `true`: the timer has expired since last call of this function.
+    * `false`: the timer hasn't expired since last call of this function.
 
 
-## SpinTimerAdapter
-* Adapter Interface, contains `void (*timeExpired)()` function pointer prototype declaration.
-* *Time expired event*. To be implemented by specific call back function with the same signature as `void (*timeExpired)()`.
+* *__Poll function that kicks the Timer__*: `void SpinTimer_tick(SpinTimer* me)`
 
-## UptimeInfo
-* Uptime Info Adapter Interface, contains `unsigned long (*tMillis)()` function pointer prototype declaration.
-* Call out to get current milliseconds. To be implemented by specific call back function with the same signature as `unsigned long (*tMillis)()`.
+  Recalculate whether the timer has expired. 
+  
+  Intended to be used by `SpinTimerContext_handleTick()` while going through all registered timers.
 
+  * Parameter `me`: Pointer to this SpinTimer object.
+
+* *__Assign specific timer expiry action object__*: `void SpinTimer_assignAction(SpinTimer* me, SpinTimerAction* action)`
+  
+  Dependency injection, see `SpinTimerAction` interface.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Parameter `action`: Pointer to specific timer expiry action object.
+
+* *__SpinTimer Action get accessor__*: `SpinTimerAction* SpinTimer_action(SpinTimer* me)`
+  
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns `SpinTimerAction*`: 
+    * Pointer to specific timer expiry action object.
+    * 0 if no action is attached.
+
+* *__Get next SpinTimer object in the list__*: `SpinTimer* SpinTimer_next(SpinTimer* me)`
+  
+  Get next SpinTimer object pointer out of the linked list containing timers.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+  * Returns:
+    * Pointer to the next SpinTimer object in the list.
+    * 0 if current object is the trailing list element.
+
+* *__Set next SpinTimer object in the list__*: `void SpinTimer_setNext(SpinTimer* me, SpinTimer* next)`
+  
+  Set next SpinTimer object of the linked list containing timers.
+
+  * Parameter `me`: Pointer to this SpinTimer object.
+
+
+## SpinTimerAction
+
+* Interface for a `SpinTimer` expiry action object
+* *__time expired action__*: `void SpinTimerAction_timeExpired(SpinTimerAction const * const me)`
+  * Parameter `me`: Pointer to this SpinTimerAction object.
+
+
+## SpinTimerUptimeInfo
+
+* Uptime Info (singleton) object
+* Mediation of platform and product specific information about system time to the SpinTimer objects:
+  * current time [us]
+  * maximum of current time value [us]
+  * duration of a system tick [us]
+* *__Instance accessor__*: `SpinTimerUptimeInfo* SpinTimerUptimeInfo_instance()`
+  
+  Allocates memory for the singleton instance of this Uptime Info object (on the heap).
+  
+  * Return `SpinTimerUptimeInfo*`: pointer to the singleton SpinTimerUptimeInfo object .
+
+* *__Destructor__*: `void SpinTimerUptimeInfo_destroy()`
+  
+  Deallocates memory assigned for this singleton object.
+  
+* *__Assign specific SpinTimerUptimeInfoAdapter__*: `void SpinTimerUptimeInfo_assignAdapter(SpinTimerUptimeInfo* me, SpinTimerUptimeInfoAdapter* adapter)`
+  
+  Dependency injection, see `SpinTimerUptimeInfoAdapter` interface.
+  
+  __This function needs to be called before creating/initializing any instances of `SpinTimer` objects!__
+  
+  * Paramter `me`: Pointer to this SpinTimerUptimeInfo object.
+  * Parameter `adapter`: Pointer to specific SpinTimerUptimeInfoAdapter object.
+
+* *__SpinTimerUptimeInfoAdapter get accessor__*: `SpinTimerUptimeInfoAdapter* SpinTimerUptimeInfo_adapter(SpinTimerUptimeInfo* me)`
+  
+  Parameter `me`: Pointer to this SpinTimerUptimeInfo object.
+  Return `SpinTimerUptimeInfoAdapter*`: 
+  * pointer to specific UptimeInfoAdapter object
+  * 0 if no adapter is assigned.
+
+
+## SpinTimerUptimeInfoAdapter
+
+* SpinTimer Uptime Info Adapter *Interface*
+* Application and platform specific interface functions to be implemented:
+  * *__Get current time__*: `uint32_t SpinTimerUptimeInfoAdapter_currentTimeMicros(SpinTimerUptimeInfoAdapter const* const me)`
+    
+    Current time [us] since start or wrap around.
+
+  * *__Maximum of time value__*: `uint32_t SpinTimerUptimeInfoAdapter_maxTimeValue(SpinTimerUptimeInfoAdapter const* const me)`
+
+    Info about the wrap around value.
+
+  * *__Duration of system tick__*: `uint32_t SpinTimerUptimeInfoAdapter_microsPerTick(SpinTimerUptimeInfoAdapter const* const me)`
+    
+    System tick time, resolution of the system [us].
+
+## SpinTimerContext
+
+Features:
+- is a singleton
+- is like a very simple scheduler.
+- has to be kicked (by calling `SpinTimerContext_handleTick()`) as often as possible and/or on regular intervals,
+i.e. in the bare metal main loop() function:
+
+  ```C
+  #include "SpinTimerContext.h"
+  #include "SpinTimer.h"
+    
+  // .. init stuff
+    
+  while (1)
+  {
+    // Kick the timer(s)
+    SpinTimerContext_instance()->handleTick(SpinTimerContext_instance());
+      
+    // .. do something
+  }
+  ```
+     
+- holds a single linked list of registered SpinTimer objects,
+  the SpinTimers automatically attach themselves to this on their creation
+  and automatically detach themselves on their destruction.
 
 # Notes
-This repository is a C language adaptation of https://github.com/dniklaus/wiring-timer.
+This repository is a C language adaptation of https://github.com/dniklaus/spin-timer.
