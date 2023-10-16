@@ -20,7 +20,9 @@ Here the integration of a SpinTimer is shown with a simple embedded application 
 ```C
 #include <stdint.h>
 #include "SpinTimer.h"
-#include "HearBeatTimerAction.h"
+#include "SpinTimerContext.h"
+#include "SpinTimerSysTickUptimeInfoAdapter.h"
+#include "HeartBeatTimerAction.h"
 
 // timer interval constant definition
 const uint32_t heartBeatTimeMicros = 200000;  /// [us]
@@ -44,7 +46,7 @@ int main(void)
   return 1;
 }
 ```
-
+For SpinTimerSysTickUptimeInfoAdapter implementation example see in [Examples/UptimeInfoAdapter/PSoC5](Examples/UptimeInfoAdapter/PSoC5).
 
 # API
 
