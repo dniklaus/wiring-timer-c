@@ -1,7 +1,7 @@
 lib.emb.spintimer
 =================
 
-Universal Timer with 1 millisecond resolution, running on system tick (or other clock sources).
+Universal Timer with 1 microsecond resolution, running on system tick (or other clock sources).
 
 
 # Features
