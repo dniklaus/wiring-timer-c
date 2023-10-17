@@ -319,6 +319,20 @@ TEST(SpinTimer, timer_testTickAndCallback_test)
 
   EXPECT_EQ(mockTimerAction->getNumberOfCalls(mockTimerAction), 1);
   EXPECT_EQ(SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()), expEndMicros);
+
+  i = 0;
+  mockTimerAction->resetNumberOfCalls(mockTimerAction);
+  while((i<10) && (SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()) != expEndMicros + 2 * delayMicros))
+  {
+    EXPECT_EQ(spinTimer->isRunning(spinTimer), false);
+    EXPECT_EQ(spinTimer->isExpired(spinTimer), false);
+    i++;
+    stubSpinTimersUptimeInfoAdapter->incrementCount(stubSpinTimersUptimeInfoAdapter);
+    SpinTimerContext_instance()->handleTick(SpinTimerContext_instance());
+  }
+  EXPECT_EQ(spinTimer->isRunning(spinTimer), false);
+  EXPECT_EQ(spinTimer->isExpired(spinTimer), false);
+  EXPECT_EQ(mockTimerAction->getNumberOfCalls(mockTimerAction), 0);
 }
 
 #if 0
@@ -352,36 +366,48 @@ TEST(SpinTimer, timer_testTickAndCallback_zeroDelay_test)
   EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 1);
   EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
 }
+#endif
 
-TEST(SpinTimer, timer_testRecurringTimer_test)
+TEST(SpinTimer, timer_testContinuousTimer_test)
 {
-  const unsigned long int delayMillis = 10;
-  const unsigned long int startMillis = 0;
-  const unsigned long int expEndMillis = startMillis + 2*delayMillis;
+  StubSpinTimersUptimeInfoAdapter* stubSpinTimersUptimeInfoAdapter = StubSpinTimersUptimeInfoAdapter_create();
+  SpinTimerUptimeInfo_instance()->assignAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
 
-  SpinTimer_create(SpinTimer_IS_RECURRING);
-  SpinTimer_assignUptimeInfoCallout(&StubTestUptimeInfo_tMillis);
-  SpinTimer_assignTimeExpiredCallback(&MockTimerAdapter_timeExpired);
+  const uint32_t delayMicros = 100;
+  const uint32_t startMicros = 0;
+  const uint32_t expEndMicros = startMicros + 2 * delayMicros;
+  uint8_t i = 0;
 
-  StubTestUptimeInfo_setTMillis(startMillis);
-  MockTimerAdapter_resetNumberOfCalls();
+  stubSpinTimersUptimeInfoAdapter->setTimeMicros(stubSpinTimersUptimeInfoAdapter, startMicros);
+  EXPECT_EQ(SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()), startMicros);
 
-  SpinTimer_start(delayMillis);
-  EXPECT_EQ(SpinTimer_isRunning(), true);
-  EXPECT_EQ(SpinTimer_isExpired(), false);
+  MockTimerAction* mockTimerAction = MockTimerAction_create();
+  SpinTimer* spinTimer = SpinTimer_create(SpinTimerMode_continuous);
+  spinTimer->assignAction(spinTimer, (SpinTimerAction*)mockTimerAction);
 
-  while(StubTestUptimeInfo_tMillis() < expEndMillis)
+  EXPECT_NE(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfo*)0);
+
+  spinTimer->start(spinTimer, delayMicros);
+  EXPECT_EQ(spinTimer->attr.delayMicros, delayMicros);
+  EXPECT_EQ(spinTimer->attr.triggerTimeMicros, delayMicros);
+  EXPECT_EQ(spinTimer->attr.currentTimeMicros, startMicros);
+  EXPECT_EQ(spinTimer->attr.maxUptimeValue, SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance()));
+  EXPECT_EQ(spinTimer->isRunning(spinTimer), true);
+  EXPECT_NE(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfo*)0);
+  EXPECT_EQ(spinTimer->isExpired(spinTimer), false);
+
+  while((i<10) && (SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()) != expEndMicros))
   {
-    EXPECT_EQ(SpinTimer_isRunning(), true);
-    SpinTimer_tick();
-    StubTestUptimeInfo_incrementTMillis();
+    EXPECT_EQ(spinTimer->isRunning(spinTimer), true);
+    i++;
+    stubSpinTimersUptimeInfoAdapter->incrementCount(stubSpinTimersUptimeInfoAdapter);
+    SpinTimerContext_instance()->handleTick(SpinTimerContext_instance());
   }
 
-  EXPECT_EQ(SpinTimer_isExpired(), true);
-  EXPECT_EQ(SpinTimer_isExpired(), false);
-  EXPECT_EQ(SpinTimer_isRunning(), true);
+  EXPECT_EQ(spinTimer->isRunning(spinTimer), true);
+  EXPECT_EQ(spinTimer->isExpired(spinTimer), true);
+  EXPECT_EQ(spinTimer->isExpired(spinTimer), false);
 
-  EXPECT_EQ(MockTimerAdapter_getNumberOfCalls(), 2);
-  EXPECT_EQ(StubTestUptimeInfo_tMillis(), expEndMillis);
+  EXPECT_EQ(mockTimerAction->getNumberOfCalls(mockTimerAction), 2);
+  EXPECT_EQ(SpinTimerUptimeInfo_instance()->currentTimeMicros(SpinTimerUptimeInfo_instance()), expEndMicros);
 }
-#endif
