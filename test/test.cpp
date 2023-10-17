@@ -46,7 +46,7 @@ TEST(SpinTimer, timer_create_allDefaults_oneShot_test)
 TEST(SpinTimer, timer_polling_startZero_test)
 {
   StubSpinTimersUptimeInfoAdapter* stubSpinTimersUptimeInfoAdapter = StubSpinTimersUptimeInfoAdapter_create();
-  SpinTimerUptimeInfo_instance()->setAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
+  SpinTimerUptimeInfo_instance()->assignAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
   
   const uint32_t delayMicros = 200;
   const uint32_t startMicros = 0;
@@ -73,7 +73,7 @@ TEST(SpinTimer, timer_polling_startZero_test)
 TEST(SpinTimer, timer_polling_startMax_test)
 {
   StubSpinTimersUptimeInfoAdapter* stubSpinTimersUptimeInfoAdapter = StubSpinTimersUptimeInfoAdapter_create();
-  SpinTimerUptimeInfo_instance()->setAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
+  SpinTimerUptimeInfo_instance()->assignAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
 
   const uint32_t delayMicros = 400;
   const uint32_t startMicros = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
@@ -279,7 +279,7 @@ TEST(SpinTimer, timer_polling_zeroDelay_startMaxMinusDelay_test)
 TEST(SpinTimer, timer_testTickAndCallback_test)
 {
   StubSpinTimersUptimeInfoAdapter* stubSpinTimersUptimeInfoAdapter = StubSpinTimersUptimeInfoAdapter_create();
-  SpinTimerUptimeInfo_instance()->setAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
+  SpinTimerUptimeInfo_instance()->assignAdapter(SpinTimerUptimeInfo_instance(), (SpinTimerUptimeInfoAdapter*)stubSpinTimersUptimeInfoAdapter);
 
   const uint32_t delayMicros = 300;
   const uint32_t startMicros = SpinTimerUptimeInfo_instance()->maxTimeValue(SpinTimerUptimeInfo_instance());
