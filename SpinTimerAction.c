@@ -3,8 +3,8 @@
 
 /* pure virtual functions: fwd. decl. */
 /**
- * @brief 
- * @details Pure virtual function. Implementation of this will be called on the SpinTimer object's expiry when injected.
+ * @brief SpinTimer object's expiry action.
+ * @details Implementation of this will be called on the SpinTimer object's expiry when injected. Pure virtual function. 
  * @param me 
  */
 static void SpinTimerAction_timeExpired(SpinTimerAction const * const me);
